@@ -496,6 +496,9 @@
             /* Loader position */
             #loader { bottom: 16px; right: 16px; }
         }
+
+        /* Hide Camera Selection Dropdown to force default */
+        #html5-qrcode-select-camera { display: none !important; }
     </style>
 </head>
 <body>
@@ -703,12 +706,13 @@
 
 <script>
     // CORE CONFIGURATION
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzCeM4hKHmRg4dIFh4MZ3PKqcCj0VoXUIKlLD0ThBUdRztmLPF7EWqOhyqoH8CerjzTHg/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyopUGkbXOh8QkwJsQpoitkpSnGwlfhCoLcChQlbshJ2LljZ1_9wa75TzdijXfHcsQulA/exec";
     
     let currentData = { vips: [], groups: [], allEvents: [], activeEventName: "", activeEventTemplate: "", activeEventSubject: "" };
     let html5QrcodeScanner = null;
     let lastScannedId = null;
     let scanCooldown = false;
+    let isProcessingScan = false; // New global scanner lock
 
     const DEFAULT_BODY_TEXT = `Hi {{FIRST}},
 
@@ -848,9 +852,9 @@ Group: {{GROUP}}`;
             if (isScan) {
                 // If scanning, DO NOT uncheck. Only check in.
                 if (guest.status === 'Checked In') {
-                    showToast(`⚠️ Already Arrived: ${guest.first}`);
+                    showToast(`⚠️ Already Checked In: ${guest.first}`);
                     setCooldown(id);
-                    return;
+                    return; // Stops execution so it doesn't toggle off
                 }
             }
 
@@ -863,7 +867,7 @@ Group: {{GROUP}}`;
             showToast(`${guest.status === 'Checked In' ? 'Checked In' : 'Unmarked'}: ${guest.first}`);
             if(isScan) setCooldown(id);
         } else {
-            showToast("Guest ID not found.");
+            showToast("Not Registered VIP");
             return;
         }
         await api('autoCheckIn', { id }, true);
@@ -900,10 +904,10 @@ Group: {{GROUP}}`;
         // Wrap in the standard container styling to show user what it looks like
         const wrapped = `
             <div id="previewContainer" style="background-color: #f3f4f6; padding: 20px; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; border-radius: 12px;">
-                <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff; background-image: linear-gradient(#ffffff,#ffffff); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     
                     <!-- HEADER STRIP (BLACK) -->
-                    <div style="background-color: #000000; padding: 24px; color: #ffffff; text-align: center;">
+                    <div style="background-color: #000000; background-image: linear-gradient(#000000,#000000); padding: 24px; color: #ffffff; text-align: center;">
                         <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">VIP Access Pass</h1>
                         <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8; font-weight: 500; color: #cccccc;">OFFICIAL ENTRY TICKET</p>
                     </div>
@@ -926,7 +930,7 @@ Group: {{GROUP}}`;
                     </div>
 
                     <!-- FOOTER (BLACK) -->
-                    <div style="background-color: #000000; padding: 20px; color: #9ca3af; font-size: 12px; text-align: center;">
+                    <div style="background-color: #000000; background-image: linear-gradient(#000000,#000000); padding: 20px; color: #9ca3af; font-size: 12px; text-align: center;">
                         <p style="margin: 0; font-weight: 700; color: #ffffff;">&copy; Canyon Activities Board</p>
                         <p style="margin: 5px 0 0 0; color: #bf5af2;">Follow us @cabgcu</p>
                         <p style="margin: 15px 0 0 0; opacity: 0.6;">This ticket is non-transferable.</p>
@@ -1008,7 +1012,7 @@ Group: {{GROUP}}`;
     }
     
     async function sendBulk() {
-        if(confirm("Blast tickets?")) {
+        if(confirm("Send tickets to all unsent users?")) {
             document.getElementById('blastBtn').innerText = "Sending...";
             await api('sendAllPendingTickets');
             document.getElementById('blastBtn').innerText = "Send Ticket Email";
@@ -1024,7 +1028,15 @@ Group: {{GROUP}}`;
             phone: document.getElementById('phone').value, email: document.getElementById('email').value,
             team: document.getElementById('groupSelect').value, shirtSize: document.getElementById('shirtSize').value
         };
-        e.target.reset(); toggleView('list'); showToast("Adding VIP...");
+        
+        // UI Updates
+        e.target.reset(); 
+        document.getElementById('first').focus(); // Keep focus here for rapid entry
+        showToast("Adding VIP...");
+        
+        // Remove the toggleView call so it stays on the Add screen
+        // toggleView('list'); 
+
         const res = await api('addVip', params);
         if(res) { currentData = res; renderUI(res); showToast("VIP Saved!"); }
     });
@@ -1072,7 +1084,11 @@ Group: {{GROUP}}`;
         if (view === 'scan') {
             setTimeout(() => document.getElementById('hardwareInput').focus(), 300);
             if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] });
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                    fps: 15, 
+                    qrbox: 250,
+                    videoConstraints: { facingMode: "environment" } 
+                });
                 html5QrcodeScanner.render(onScanSuccess, onScanError);
             }
         } else if (html5QrcodeScanner) {
@@ -1081,10 +1097,24 @@ Group: {{GROUP}}`;
     }
 
     function onScanSuccess(decodedText) {
+        // Global Lock: If we are already processing a scan, ignore everything
+        if (isProcessingScan) return;
+
         try {
             const id = decodedText.includes('id=') ? decodedText.split('id=')[1].split('&')[0] : null;
-            if (id) { checkIn(id, true); if (window.navigator.vibrate) window.navigator.vibrate(200); }
-        } catch (e) {}
+            if (id) { 
+                isProcessingScan = true; // Lock the scanner
+                
+                checkIn(id, true); 
+                if (window.navigator.vibrate) window.navigator.vibrate(200);
+
+                // Release lock after 2.5 seconds
+                setTimeout(() => { isProcessingScan = false; }, 2500);
+            }
+        } catch (e) {
+            // If error, release lock immediately so they can try again
+            isProcessingScan = false;
+        }
     }
     function onScanError(e) {}
 
