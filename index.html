@@ -30,7 +30,7 @@
             color: var(--text-main);
             background-color: var(--bg-dark);
             min-height: 100vh;
-            padding-bottom: 80px;
+            padding-bottom: 40px;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
         }
@@ -114,7 +114,6 @@
             cursor: pointer;
             transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 0.9rem;
-            white-space: nowrap;
         }
 
         .control-item:hover {
@@ -180,25 +179,19 @@
             border: 1px solid var(--glass-border);
         }
 
-        /* Responsive Form Grid */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
         /* Table */
         .table-container {
             margin-top: 20px;
             border-radius: var(--radius-card);
             overflow: hidden;
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 8px;
+            min-width: 800px; /* Ensures table doesn't crush on mobile, allows scroll */
         }
 
         th {
@@ -900,7 +893,7 @@ Group: {{GROUP}}`;
             let val = this.value.trim();
             if (!val) return;
             let id = val.includes('id=') ? val.split('id=')[1].split('&')[0] : val;
-            checkIn(id, true); // Pass true for isScan
+            checkIn(id, true);
             this.value = '';
         }
     });
@@ -952,7 +945,11 @@ Group: {{GROUP}}`;
     }
     function onScanError(e) {}
 
-    window.onload = () => refreshData();
+    window.onload = () => {
+        refreshData();
+        // Polling for live updates every 5 seconds
+        setInterval(() => refreshData(null, true), 5000); 
+    };
 </script>
 </body>
 </html>
