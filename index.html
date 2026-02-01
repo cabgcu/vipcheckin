@@ -351,12 +351,7 @@
             border: 1px solid #ccc;
         }
         #previewContainer {
-            background: #fff;
-            margin: 20px;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            border: 1px solid #e0e0e0;
+            /* Styles handled by JS now */
         }
 
         /* Loading Indicator */
@@ -770,10 +765,14 @@ Group: {{GROUP}}`;
     // --- DATA HANDLING ---
     async function refreshData(eventId = null, silent = false) {
         const data = await api('getAppData', eventId ? { eventId } : {}, true); 
-        if (data) { currentData = data; renderUI(currentData); }
+        if (data) { 
+            currentData = data; 
+            // Only update inputs if this is NOT a silent poll (i.e., user switched event or initial load)
+            renderUI(currentData, !silent); 
+        }
     }
 
-    function renderUI(data) {
+    function renderUI(data, updateInputs = false) {
         if (!data || !data.vips) return;
 
         // Stats
@@ -789,11 +788,15 @@ Group: {{GROUP}}`;
         document.getElementById('groupSelect').innerHTML = '<option value="" disabled selected>Assign Group...</option>' + data.groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
         
         // Template Input & Preview
-        const tpl = data.activeEventBody || DEFAULT_BODY_TEXT;
-        const subj = data.activeEventSubject || DEFAULT_SUBJECT_TEXT;
-        document.getElementById('emailTemplateInput').value = tpl;
-        document.getElementById('emailSubjectInput').value = subj;
-        updatePreview(tpl);
+        // Only overwrite text areas if we switched events or loaded fresh. 
+        // DO NOT overwrite on background polling to prevent data loss while typing.
+        if (updateInputs) {
+            const tpl = data.activeEventBody || DEFAULT_BODY_TEXT;
+            const subj = data.activeEventSubject || DEFAULT_SUBJECT_TEXT;
+            document.getElementById('emailTemplateInput').value = tpl;
+            document.getElementById('emailSubjectInput').value = subj;
+            updatePreview(tpl);
+        }
 
         // VIP Table
         const tbody = document.getElementById('guestTableBody');
@@ -896,16 +899,40 @@ Group: {{GROUP}}`;
         
         // Wrap in the standard container styling to show user what it looks like
         const wrapped = `
-            <div id="previewContainer">
-                <h1 style="color: #522d80; margin-top: 0; font-size: 24px;">CAB VIP TICKET</h1>
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                <div style="font-size: 16px; color: #333; line-height: 1.6;">
-                    ${content}
+            <div id="previewContainer" style="background-color: #f3f4f6; padding: 20px; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; border-radius: 12px;">
+                <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    
+                    <!-- HEADER STRIP (BLACK) -->
+                    <div style="background-color: #000000; padding: 24px; color: #ffffff; text-align: center;">
+                        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">VIP Access Pass</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8; font-weight: 500; color: #cccccc;">OFFICIAL ENTRY TICKET</p>
+                    </div>
+
+                    <!-- EDITABLE BODY CONTENT -->
+                    <div style="padding: 40px 30px; font-size: 16px; color: #333333; line-height: 1.6;">
+                        ${content}
+                    </div>
+
+                    <!-- DIVIDER -->
+                    <div style="padding: 0 15px;"><div style="border-top: 2px dashed #e5e7eb; width: 100%;"></div></div>
+
+                    <!-- QR CODE SECTION -->
+                    <div style="text-align: center; padding: 40px 30px; background-color: #f9fafb;">
+                        <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; display: inline-block;">
+                             <div style="width:150px; height:150px; background:#eee; display:flex; align-items:center; justify-content:center; color:#999; font-weight:bold; letter-spacing:1px;">QR CODE</div>
+                        </div>
+                        <p style="margin: 20px 0 0 0; font-size: 13px; color: #6b7280; font-weight: 600;">SCAN AT ENTRY</p>
+                        <p style="margin: 5px 0 0 0; font-size: 11px; color: #9ca3af;">ID: #VIP-123456</p>
+                    </div>
+
+                    <!-- FOOTER (BLACK) -->
+                    <div style="background-color: #000000; padding: 20px; color: #9ca3af; font-size: 12px; text-align: center;">
+                        <p style="margin: 0; font-weight: 700; color: #ffffff;">&copy; Canyon Activities Board</p>
+                        <p style="margin: 5px 0 0 0; color: #bf5af2;">Follow us @cabgcu</p>
+                        <p style="margin: 15px 0 0 0; opacity: 0.6;">This ticket is non-transferable.</p>
+                    </div>
+
                 </div>
-                <div style="margin: 30px 0; text-align: center;">
-                    <div style="width:150px; height:150px; background:#eee; display:inline-block; border:4px solid #522d80; padding:10px;">(QR Code Placeholder)</div>
-                </div>
-                <p style="color: #888; font-size: 12px; margin-top: 20px;">Please show this code at the check-in desk.</p>
             </div>
         `;
         document.getElementById('emailPreview').innerHTML = wrapped;
@@ -937,7 +964,16 @@ Group: {{GROUP}}`;
 
     async function createNewEvent() {
         const name = document.getElementById('newEventName').value;
-        if(name) { showToast("Creating Event..."); const res = await api('addEvent', { name }); if(res) { document.getElementById('newEventName').value=''; currentData=res; renderUI(res); showToast("Event Created!"); } }
+        if(name) { 
+            showToast("Creating Event..."); 
+            const res = await api('addEvent', { name }); 
+            if(res) { 
+                document.getElementById('newEventName').value=''; 
+                currentData=res; 
+                renderUI(res, true); // Force update inputs
+                showToast("Event Created!"); 
+            } 
+        }
     }
 
     async function createNewGroup() {
