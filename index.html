@@ -35,6 +35,11 @@
             overflow-x: hidden;
         }
 
+        /* Utility Spacers */
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+
         .frosted {
             background: var(--glass-surface);
             backdrop-filter: blur(var(--blur)) saturate(150%);
@@ -62,6 +67,7 @@
             border-radius: var(--radius-card);
             margin-bottom: 40px;
             margin-top: 20px;
+            transition: all 0.3s ease;
         }
 
         .brand {
@@ -179,6 +185,14 @@
             border: 1px solid var(--glass-border);
         }
 
+        /* Responsive Form Grid - Improved Spacing */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
         /* Table */
         .table-container {
             margin-top: 20px;
@@ -201,6 +215,11 @@
             font-size: 0.75rem;
             letter-spacing: 0.1em;
             text-transform: uppercase;
+        }
+        
+        /* Align last header right to match content */
+        th:last-child {
+            text-align: right;
         }
 
         td {
@@ -229,6 +248,12 @@
             display: block;
             text-transform: uppercase;
         }
+
+        /* Status Badge */
+        .action-wrapper { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+        .status-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+        .status-badge.sent { color: #34C759; background: rgba(52, 199, 89, 0.1); }
+        .status-badge.draft { color: #FF9F0A; background: rgba(255, 159, 10, 0.1); }
 
         /* Group Management List Items */
         .group-list-item {
@@ -362,48 +387,65 @@
         /* Toast Notification */
         #toast {
             visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: rgba(30, 30, 30, 0.95);
+            min-width: 300px;
+            max-width: 90vw;
+            background-color: rgba(15, 15, 15, 0.98);
             color: #fff;
             text-align: center;
-            border-radius: 50px;
-            padding: 16px;
+            border-radius: 20px;
+            padding: 30px;
             position: fixed;
-            z-index: 10001;
+            z-index: 20001;
             left: 50%;
-            bottom: 30px;
-            font-size: 1rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            font-size: 1.5rem;
+            font-weight: 800;
+            border: 2px solid #34C759;
+            box-shadow: 0 0 100px rgba(0,0,0,0.9);
+            backdrop-filter: blur(12px);
             opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s, transform 0.3s;
-            transform: translateY(20px);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
         }
 
         #toast.show {
             visibility: visible;
             opacity: 1;
-            bottom: 50px;
-            transform: translateY(0);
+            transform: translate(-50%, -50%) scale(1);
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- MOBILE OPTIMIZATIONS --- */
         @media (max-width: 900px) {
-            .app-container { padding: 0 16px; }
+            .app-container { 
+                padding: 0 16px; 
+            }
             
             /* Navbar adjustments */
-            .topbar { flex-direction: column; gap: 20px; text-align: center; height: auto; padding: 20px; top: 10px; }
+            .topbar { 
+                flex-direction: column; 
+                gap: 20px; 
+                text-align: center; 
+                height: auto; 
+                padding: 20px 16px; 
+                /* Sticky Top Fix for Mobile */
+                position: sticky;
+                top: 0;
+                margin-top: 0;
+                border-radius: 0 0 28px 28px;
+                background: rgba(15, 15, 15, 0.95);
+                border-top: none;
+                border-left: none;
+                border-right: none;
+            }
             .brand { flex-direction: column; gap: 10px; }
             .controls { flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
             .control-item { font-size: 0.8rem; padding: 0 14px; height: 40px; flex: 1 1 auto; justify-content: center; }
 
             /* Stats Cards */
-            .stats-container { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+            .stats-container { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; margin-top: 10px; }
             .stat-card { padding: 16px; }
             .stat-card:last-child { grid-column: span 2; } /* Make 'Remaining' full width on mobile */
             .stat-val { font-size: 2rem; }
@@ -425,7 +467,16 @@
                 background: transparent; 
             }
             td:first-child { border-radius: 0; padding-bottom: 8px; font-size: 1.1rem; } /* Name */
-            td:last-child { border-radius: 0; margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; } /* Buttons */
+            
+            /* Action Row on Mobile */
+            td:last-child { 
+                border-radius: 0; 
+                margin-top: 10px; 
+                display: block; 
+                padding-top: 12px;
+                border-top: 1px solid rgba(255,255,255,0.1);
+            }
+            .action-wrapper { width: 100%; justify-content: space-between; }
             
             /* Hide non-essential columns on mobile to save space */
             td:nth-child(4), /* Phone */
@@ -506,7 +557,7 @@
                         <th>EMAIL</th>
                         <th>SHIRT SIZE</th>
                         <th>CHECK IN</th>
-                        <th>RESEND</th>
+                        <th>ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody id="guestTableBody"></tbody>
@@ -651,6 +702,8 @@
     
     let currentData = { vips: [], groups: [], allEvents: [], activeEventName: "", activeEventTemplate: "", activeEventSubject: "" };
     let html5QrcodeScanner = null;
+    let lastScannedId = null;
+    let scanCooldown = false;
 
     const DEFAULT_BODY_TEXT = `Hi {{FIRST}},
 
@@ -696,7 +749,7 @@ Group: {{GROUP}}`;
     }
 
     // --- DATA HANDLING ---
-    async function refreshData(eventId = null) {
+    async function refreshData(eventId = null, silent = false) {
         const data = await api('getAppData', eventId ? { eventId } : {}, true); 
         if (data) { currentData = data; renderUI(currentData); }
     }
@@ -735,8 +788,15 @@ Group: {{GROUP}}`;
                 <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize}</span></td>
                 <td><button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button></td>
                 <td>
-                    <button onclick="resend('${v.id}')" class="btn-icon">🔄</button>
-                    <button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;">🗑️</button>
+                    <div class="action-wrapper">
+                        <span class="status-badge ${v.sent === 'Yes' ? 'sent' : 'draft'}">
+                            ${v.sent === 'Yes' ? '✉️ SENT' : '⚠️ UNSENT'}
+                        </span>
+                        <div>
+                            <button onclick="resend('${v.id}')" class="btn-icon" title="Send/Resend">🔄</button>
+                            <button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;" title="Remove">🗑️</button>
+                        </div>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -758,24 +818,39 @@ Group: {{GROUP}}`;
 
     // --- ACTIONS ---
     async function checkIn(id, isScan = false) {
+        // Prevent Double Scans
+        if (isScan && scanCooldown && lastScannedId === id) return;
+        
         const guest = currentData.vips.find(g => g.id === id);
         if (guest) {
-            // Prevent un-checking if scanning
-            if (isScan && guest.status === 'Checked In') {
-                showToast(`Already Arrived: ${guest.first}`);
-                return;
+            if (isScan) {
+                // If scanning, DO NOT uncheck. Only check in.
+                if (guest.status === 'Checked In') {
+                    showToast(`⚠️ Already Arrived: ${guest.first}`);
+                    setCooldown(id);
+                    return;
+                }
             }
 
+            // Normal Toggle or Initial Check In
             guest.status = (guest.status === 'Checked In') ? 'Invited' : 'Checked In';
             renderUI(currentData);
             const searchVal = document.getElementById("manualCheckInSearch").value;
             if(searchVal) filterManualCheckIn();
+            
             showToast(`${guest.status === 'Checked In' ? 'Checked In' : 'Unmarked'}: ${guest.first}`);
+            if(isScan) setCooldown(id);
         } else {
             showToast("Guest ID not found.");
             return;
         }
         await api('autoCheckIn', { id }, true);
+    }
+
+    function setCooldown(id) {
+        lastScannedId = id;
+        scanCooldown = true;
+        setTimeout(() => { scanCooldown = false; lastScannedId = null; }, 3000); // 3 second lockout for same ID
     }
 
     // --- EDITOR LOGIC ---
