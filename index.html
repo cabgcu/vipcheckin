@@ -30,7 +30,7 @@
             color: var(--text-main);
             background-color: var(--bg-dark);
             min-height: 100vh;
-            padding-bottom: 80px; /* Extra padding for mobile scroll */
+            padding-bottom: 80px;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
         }
@@ -764,9 +764,15 @@ Group: {{GROUP}}`;
     }
 
     // --- ACTIONS ---
-    async function checkIn(id) {
+    async function checkIn(id, isScan = false) {
         const guest = currentData.vips.find(g => g.id === id);
         if (guest) {
+            // Prevent un-checking if scanning
+            if (isScan && guest.status === 'Checked In') {
+                showToast(`Already Arrived: ${guest.first}`);
+                return;
+            }
+
             guest.status = (guest.status === 'Checked In') ? 'Invited' : 'Checked In';
             renderUI(currentData);
             const searchVal = document.getElementById("manualCheckInSearch").value;
@@ -894,7 +900,7 @@ Group: {{GROUP}}`;
             let val = this.value.trim();
             if (!val) return;
             let id = val.includes('id=') ? val.split('id=')[1].split('&')[0] : val;
-            checkIn(id);
+            checkIn(id, true); // Pass true for isScan
             this.value = '';
         }
     });
@@ -941,7 +947,7 @@ Group: {{GROUP}}`;
     function onScanSuccess(decodedText) {
         try {
             const id = decodedText.includes('id=') ? decodedText.split('id=')[1].split('&')[0] : null;
-            if (id) { checkIn(id); if (window.navigator.vibrate) window.navigator.vibrate(200); }
+            if (id) { checkIn(id, true); if (window.navigator.vibrate) window.navigator.vibrate(200); }
         } catch (e) {}
     }
     function onScanError(e) {}
