@@ -1,311 +1,952 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>CAB VIP Check In System</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CAB VIP Check In System</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
-<style>
-:root {
-  --bg-dark: #000000;
-  --glass-surface: rgba(15, 15, 15, 0.85); 
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --text-main: #ffffff;
-  --text-muted: #a1a1aa;
-  --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
-  --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
-  --radius-card: 28px;
-  --radius-pill: 100px;
-  --blur: 40px;
-  --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --glass-surface: rgba(15, 15, 15, 0.85); 
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
+            --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
+            --gradient-danger: linear-gradient(135deg, #FF3B30, #FF9500);
+            --radius-card: 28px;
+            --radius-pill: 100px;
+            --blur: 40px;
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body {
-  margin: 0; font-family: var(--font-stack); color: var(--text-main); background-color: var(--bg-dark);
-  min-height: 100vh; padding-bottom: 40px; -webkit-font-smoothing: antialiased; overflow-x: hidden;
-}
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            font-family: var(--font-stack);
+            color: var(--text-main);
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+            padding-bottom: 80px; /* Extra padding for mobile scroll */
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
 
-.frosted {
-  background: var(--glass-surface); backdrop-filter: blur(var(--blur)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(150%); border: 1px solid var(--glass-border);
-}
+        .frosted {
+            background: var(--glass-surface);
+            backdrop-filter: blur(var(--blur)) saturate(150%);
+            -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+            border: 1px solid var(--glass-border);
+        }
 
-.app-container { max-width: 1440px; margin: 0 auto; padding: 0 40px; display: flex; flex-direction: column; }
+        .app-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            flex-direction: column;
+        }
 
-.topbar {
-  position: sticky; top: 20px; z-index: 50; display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 32px; border-radius: var(--radius-card); margin-bottom: 40px; margin-top: 20px;
-}
+        /* Navigation Bar */
+        .topbar {
+            position: sticky;
+            top: 20px;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 32px;
+            border-radius: var(--radius-card);
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
 
-.brand-text h1 {
-  font-size: 1.4rem; font-weight: 800; margin: 0;
-  background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
 
-.controls { display: flex; gap: 10px; flex-wrap: wrap; }
-.control-item {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-  color: #fff; padding: 0 16px; border-radius: var(--radius-pill); font-weight: 600;
-  height: 42px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; font-size: 0.85rem;
-}
-.control-item.active { background: var(--gradient-accent); border: none; }
+        .brand-logo {
+            height: 50px;
+            width: auto;
+            display: block;
+        }
 
-.stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-.stat-card { padding: 24px; border-radius: var(--radius-card); text-align: center; }
-.stat-val { font-size: 2.5rem; font-weight: 800; display: block; }
-.stat-label { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.1em; }
+        .brand-text h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin: 0;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
 
-/* Scanner Container */
-#reader { width: 100%; max-width: 600px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border) !important; }
+        .event-subtext {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
 
-/* Table */
-.table-container { margin-top: 20px; border-radius: var(--radius-card); overflow-x: auto; }
-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; min-width: 800px; }
-th { padding: 16px; text-align: left; color: var(--text-muted); font-size: 0.75rem; letter-spacing: 0.1em; }
-td { padding: 20px 16px; background: rgba(255,255,255,0.03); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); }
-td:first-child { border-left: 1px solid var(--glass-border); border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
-td:last-child { border-right: 1px solid var(--glass-border); border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
 
-.group-tag { font-size: 0.7rem; font-weight: 700; color: #BF5AF2; margin-top: 4px; display: block; text-transform: uppercase; }
-.btn-action { background: var(--gradient-accent); border: none; padding: 8px 16px; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer; }
-.modern-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 14px; border-radius: 12px; color: white; outline: none; }
-.form-card { padding: 40px; border-radius: var(--radius-card); max-width: 800px; margin: 0 auto; }
+        .control-item {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            padding: 0 20px;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
 
-@media(max-width: 900px) {
-  .topbar { flex-direction: column; gap: 20px; text-align: center; padding: 20px; height: auto; }
-  .stats-container { grid-template-columns: 1fr; }
-}
-</style>
+        .control-item:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .control-item.active {
+            background: var(--gradient-accent);
+            border: none;
+            box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2);
+        }
+
+        /* Stats Grid */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            border-radius: var(--radius-card);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-val {
+            font-size: 2.8rem;
+            font-weight: 800;
+            display: block;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        /* Scanner */
+        #reader {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border) !important;
+        }
+
+        /* Manual Search Results in Scanner */
+        .manual-result-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Responsive Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Table */
+        .table-container {
+            margin-top: 20px;
+            border-radius: var(--radius-card);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 20px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td:first-child {
+            border-left: 1px solid var(--glass-border);
+            border-top-left-radius: 16px;
+            border-bottom-left-radius: 16px;
+        }
+
+        td:last-child {
+            border-right: 1px solid var(--glass-border);
+            border-top-right-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        .group-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #BF5AF2;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        /* Group Management List Items */
+        .group-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            color: #fff;
+        }
+        .group-list-item:last-child {
+            border-bottom: none;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            color: white;
+        }
+        .btn-icon:hover { opacity: 1; transform: scale(1.1); }
+
+        .btn-action {
+            background: var(--gradient-accent);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:active {
+            transform: scale(0.96);
+        }
+
+        .modern-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 14px 18px;
+            border-radius: 14px;
+            color: white;
+            outline: none;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .modern-input:focus {
+            border-color: #0A84FF;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-card {
+            padding: 40px;
+            border-radius: var(--radius-card);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Editor Styles */
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .tag-chip {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+        }
+        .tag-chip:hover {
+            background: var(--gradient-accent);
+            border-color: transparent;
+        }
+        #emailPreview {
+            background: #f4f4f4;
+            color: #000;
+            border-radius: 12px;
+            padding: 0;
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+        #previewContainer {
+            background: #fff;
+            margin: 20px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Loading Indicator */
+        #loader {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #0A84FF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10001;
+            left: 50%;
+            bottom: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s, transform 0.3s;
+            transform: translateY(20px);
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+            transform: translateY(0);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- MOBILE OPTIMIZATIONS --- */
+        @media (max-width: 900px) {
+            .app-container { padding: 0 16px; }
+            
+            /* Navbar adjustments */
+            .topbar { flex-direction: column; gap: 20px; text-align: center; height: auto; padding: 20px; top: 10px; }
+            .brand { flex-direction: column; gap: 10px; }
+            .controls { flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+            .control-item { font-size: 0.8rem; padding: 0 14px; height: 40px; flex: 1 1 auto; justify-content: center; }
+
+            /* Stats Cards */
+            .stats-container { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+            .stat-card { padding: 16px; }
+            .stat-card:last-child { grid-column: span 2; } /* Make 'Remaining' full width on mobile */
+            .stat-val { font-size: 2rem; }
+
+            /* List View -> Card View for Mobile */
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { 
+                margin-bottom: 12px; 
+                background: rgba(255,255,255,0.03); 
+                border: 1px solid var(--glass-border); 
+                border-radius: 16px; 
+                padding: 16px;
+            }
+            td { 
+                border: none; 
+                position: relative; 
+                padding: 4px 0; 
+                background: transparent; 
+            }
+            td:first-child { border-radius: 0; padding-bottom: 8px; font-size: 1.1rem; } /* Name */
+            td:last-child { border-radius: 0; margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; } /* Buttons */
+            
+            /* Hide non-essential columns on mobile to save space */
+            td:nth-child(4), /* Phone */
+            td:nth-child(5)  /* Email */
+            { display: none; } 
+
+            /* Form Layouts */
+            .form-grid { grid-template-columns: 1fr; gap: 16px; }
+            .editor-grid { grid-template-columns: 1fr; }
+            .form-card { padding: 24px 16px; }
+
+            /* Loader position */
+            #loader { bottom: 16px; right: 16px; }
+        }
+    </style>
 </head>
 <body>
 
+<div id="loader">
+    <div class="spinner"></div>
+    <span style="font-size: 0.75rem; font-weight: 700; color: #aaa; letter-spacing: 0.05em;">SYNCING</span>
+</div>
+
+<div id="toast">Notification</div>
+
 <div class="app-container">
-  <div class="frosted topbar">
-    <div class="brand">
-      <div class="brand-text">
-        <h1>CAB VIP System</h1>
-        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
-          Event: <select id="eventDropdown" class="modern-input" style="width:auto; height:auto; padding:4px 8px; display:inline-block;" onchange="switchEvent(this.value)">
-            <option value="">Loading...</option>
-          </select>
+    <!-- Navigation Bar -->
+    <div class="frosted topbar">
+        <div class="brand">
+            <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB VIP System" class="brand-logo">
+            <div class="brand-text">
+                <h1>CAB VIP Check In</h1>
+                <div class="event-subtext">
+                    Active Event: <select id="eventDropdown" class="modern-input" style="width:auto; height:auto; padding:4px 12px; display:inline-block;" onchange="switchEvent(this.value)">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+            </div>
         </div>
-      </div>
+        <div class="controls">
+            <button onclick="toggleView('list')" id="nav-list" class="control-item active">📋 VIP LIST</button>
+            <button onclick="toggleView('scan')" id="nav-scan" class="control-item">📸 CHECK IN</button>
+            <button onclick="toggleView('add')" id="nav-add" class="control-item">👤 ADD</button>
+            <button onclick="toggleView('settings')" id="nav-settings" class="control-item">⚙️ SETTINGS</button>
+        </div>
     </div>
-    <div class="controls">
-      <button onclick="toggleView('list')" id="nav-list" class="control-item active">📋 VIP LIST</button>
-      <button onclick="toggleView('scan')" id="nav-scan" class="control-item">📸 SCANNER</button>
-      <button onclick="toggleView('add')" id="nav-add" class="control-item">👤 ADD</button>
-      <button onclick="toggleView('settings')" id="nav-settings" class="control-item">⚙️ SETTINGS</button>
-    </div>
-  </div>
 
-  <div class="stats-container" id="statsBar">
-    <div class="frosted stat-card">
-      <span class="stat-label">Total VIPs</span>
-      <span class="stat-val" id="countTotal">0</span>
+    <!-- Stats Bar -->
+    <div class="stats-container" id="statsBar">
+        <div class="frosted stat-card">
+            <span class="stat-label">Total VIPs</span>
+            <span class="stat-val" id="countTotal">0</span>
+        </div>
+        <div class="frosted stat-card">
+            <span class="stat-label">Checked In</span>
+            <span class="stat-val" style="color:#34C759" id="countIn">0</span>
+        </div>
+        <div class="frosted stat-card">
+            <span class="stat-label">Remaining</span>
+            <span class="stat-val" style="color:#0A84FF" id="countLeft">0</span>
+        </div>
     </div>
-    <div class="frosted stat-card">
-      <span class="stat-label">Checked In</span>
-      <span class="stat-val" style="color:#34C759" id="countIn">0</span>
-    </div>
-    <div class="frosted stat-card">
-      <span class="stat-label">Remaining</span>
-      <span class="stat-val" style="color:#0A84FF" id="countLeft">0</span>
-    </div>
-  </div>
 
-  <div id="view-list" class="view">
-    <div style="display:flex; gap:12px; margin-bottom: 30px;">
-      <input type="text" id="search" class="modern-input" placeholder="Search guests..." onkeyup="filterTable()" style="flex:1;">
-      <button onclick="sendBulk()" id="blastBtn" class="btn-action" style="padding:0 30px; white-space:nowrap;">🚀 BLAST TICKETS</button>
+    <!-- VIEW: VIP LIST -->
+    <div id="view-list" class="view">
+        <div style="display:flex; gap:12px; margin-bottom: 30px;">
+            <input type="text" id="search" class="modern-input" placeholder="Search first name, last name, or group..." onkeyup="filterTable()" style="flex:1;">
+            <button onclick="sendBulk()" id="blastBtn" class="btn-action" style="padding:0 30px; white-space:nowrap;">Send Ticket Email</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>FIRST</th>
+                        <th>LAST</th>
+                        <th>GROUP</th>
+                        <th>PHONE</th>
+                        <th>EMAIL</th>
+                        <th>SHIRT SIZE</th>
+                        <th>CHECK IN</th>
+                        <th>RESEND</th>
+                    </tr>
+                </thead>
+                <tbody id="guestTableBody"></tbody>
+            </table>
+        </div>
     </div>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>FIRST</th><th>LAST</th><th>PHONE</th><th>EMAIL</th><th>SHIRT SIZE</th><th>CHECK IN</th><th>RESEND</th>
-          </tr>
-        </thead>
-        <tbody id="guestTableBody"></tbody>
-      </table>
-    </div>
-  </div>
 
-  <div id="view-scan" class="view" style="display:none;">
-    <div class="frosted form-card">
-      <h2 style="text-align:center; margin-bottom:20px;">QR Scanner</h2>
-      <div id="reader"></div>
-      <p style="text-align:center; color:var(--text-muted); margin-top:20px;">Point camera at a ticket QR code to check in.</p>
-    </div>
-  </div>
+    <!-- VIEW: CHECK IN / SCANNER -->
+    <div id="view-scan" class="view" style="display:none;">
+        <div class="frosted form-card">
+            <h2 style="text-align:center; margin-bottom:20px; font-weight: 800;">CHECK IN</h2>
+            
+            <!-- Manual Check-In -->
+            <div style="margin-bottom: 30px;">
+                <label class="stat-label" style="display:block; margin-bottom: 10px;">Manual Check-In</label>
+                <input type="text" id="manualCheckInSearch" class="modern-input" placeholder="Type first or last name..." onkeyup="filterManualCheckIn()">
+                <div id="manualCheckInResults" style="margin-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
 
-  <div id="view-add" class="view" style="display:none;">
-    <div class="frosted form-card">
-      <h2 class="mb-4">Add VIP to <span id="addEventLabel" style="color:#BF5AF2">...</span></h2>
-      <form id="vipForm">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
-          <input type="text" id="first" class="modern-input" placeholder="First Name" required>
-          <input type="text" id="last" class="modern-input" placeholder="Last Name" required>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
-          <input type="tel" id="phone" class="modern-input" placeholder="Phone" required>
-          <input type="email" id="email" class="modern-input" placeholder="Email" required>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-          <select id="groupSelect" class="modern-input" required><option value="">Assign Group...</option></select>
-          <select id="shirtSize" class="modern-input" required>
-            <option value="" disabled selected>Shirt Size</option>
-            <option>S</option><option>M</option><option>L</option><option>XL</option><option>2XL</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-action" style="width:100%; padding:18px; margin-top:30px;">Add VIP Guest</button>
-      </form>
-    </div>
-  </div>
+            <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 30px 0;">
 
-  <div id="view-settings" class="view" style="display:none;">
-    <div class="frosted form-card">
-      <h2>System Settings</h2>
-      <div style="margin-bottom:30px;">
-        <label style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">START NEW EVENT</label>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <input type="text" id="newEventName" class="modern-input" placeholder="e.g. Midnight Madness">
-          <button onclick="createNewEvent()" class="btn-action">Create</button>
+            <!-- Hardware Input -->
+            <label class="stat-label" style="display:block; margin-bottom: 10px;">USB Scanner Input</label>
+            <input type="text" id="hardwareInput" class="modern-input" placeholder="Click here to scan ticket..." style="text-align:center; margin-bottom: 20px; background: rgba(10, 132, 255, 0.1); border-color: rgba(10, 132, 255, 0.3);" autocomplete="off">
+            
+            <div id="reader"></div>
+            <div style="margin-top:30px; text-align: center;">
+                <p style="color:var(--text-muted); font-size:0.95rem; line-height: 1.5;">Scan a VIP pass for instant check-in.</p>
+            </div>
         </div>
-      </div>
-      <div>
-        <label style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">ADD GROUP TO ACTIVE EVENT</label>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <input type="text" id="newGroupName" class="modern-input" placeholder="e.g. Dance Team">
-          <button onclick="createNewGroup()" class="btn-action">Add</button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <!-- VIEW: ADD VIP -->
+    <div id="view-add" class="view" style="display:none;">
+        <div class="frosted form-card">
+            <h2 class="mb-4">Add VIP to <span id="addEventLabel" style="color:#BF5AF2">...</span></h2>
+            <form id="vipForm">
+                <div class="form-grid">
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">First Name</label>
+                        <input type="text" id="first" class="modern-input" placeholder="e.g. John" required>
+                    </div>
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Last Name</label>
+                        <input type="text" id="last" class="modern-input" placeholder="e.g. Doe" required>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Phone Number <span style="font-weight:normal; opacity:0.6; font-size:0.7em;">(Optional)</span></label>
+                        <input type="tel" id="phone" class="modern-input" placeholder="(000) 000-0000">
+                    </div>
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Email Address</label>
+                        <input type="email" id="email" class="modern-input" placeholder="john@gcu.edu" required>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Assign Group</label>
+                        <select id="groupSelect" class="modern-input" required>
+                            <option value="">Assign Group...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Shirt Size <span style="font-weight:normal; opacity:0.6; font-size:0.7em;">(Optional)</span></label>
+                        <select id="shirtSize" class="modern-input">
+                            <option value="" disabled selected>Size</option>
+                            <option>XS</option>
+                            <option>S</option>
+                            <option>M</option>
+                            <option>L</option>
+                            <option>XL</option>
+                            <option>2XL</option>
+                            <option>3XL</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-action" style="width:100%; padding:18px; margin-top:30px; font-size:1.1rem;">ADD VIP GUEST</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW: SETTINGS -->
+    <div id="view-settings" class="view" style="display:none;">
+        <div class="frosted form-card">
+            <h2 class="mb-4">System Setup</h2>
+            <div style="margin-bottom:30px;">
+                <label class="stat-label" style="display:block; margin-bottom: 12px;">Create New Event</label>
+                <div style="display:flex; gap:12px;">
+                    <input type="text" id="newEventName" class="modern-input" placeholder="e.g. Lip Sync 2026">
+                    <button onclick="createNewEvent()" class="btn-action">Create</button>
+                </div>
+            </div>
+            <div style="margin-bottom:30px;">
+                <label class="stat-label" style="display:block; margin-bottom: 12px;">Add Group</label>
+                <div style="display:flex; gap:12px;">
+                    <input type="text" id="newGroupName" class="modern-input" placeholder="e.g. Dance Team">
+                    <button onclick="createNewGroup()" class="btn-action">Add</button>
+                </div>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid var(--glass-border); margin:30px 0;">
+            
+            <!-- Email Template Editor -->
+            <div style="margin-bottom:30px;">
+                <label class="stat-label" style="display:block; margin-bottom: 12px;">Email Template</label>
+                
+                <input type="text" id="emailSubjectInput" class="modern-input" placeholder="Subject Line" style="margin-bottom:12px; font-weight:bold;">
+
+                <div class="editor-grid">
+                    <div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                            <button type="button" class="tag-chip" onclick="insertTag('{{FIRST}}')">+ First Name</button>
+                            <button type="button" class="tag-chip" onclick="insertTag('{{EVENT}}')">+ Event</button>
+                            <button type="button" class="tag-chip" onclick="insertTag('{{GROUP}}')">+ Group</button>
+                        </div>
+                        <textarea id="emailTemplateInput" class="modern-input" style="height:300px; font-family:sans-serif; font-size:0.95rem; line-height:1.5;" oninput="updatePreview()" placeholder="Type your message here..."></textarea>
+                        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                            <button onclick="resetTemplate()" style="background:transparent; border:1px solid rgba(255,255,255,0.3); color:#aaa; padding:8px 12px; border-radius:8px; cursor:pointer;">Reset Default</button>
+                            <button onclick="saveEmailTemplate()" class="btn-action">Save Template</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="stat-label" style="margin-bottom:10px; display:block; color:#aaa;">Email Preview</label>
+                        <div id="emailPreview"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Management -->
+            <div id="groupListContainer">
+                <p style="color:var(--text-muted); font-style:italic;">Loading groups...</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-// UPDATED URL
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwc7Xw760Lgi-mLn2jEH5yLweCqpQIIy6okEpf32oAodG78FAmuqdHREGIk0olixVHkJw/exec";
-let html5QrcodeScanner = null;
-
-async function api(action, params = {}) {
-    const url = new URL(WEB_APP_URL);
-    url.searchParams.append('action', action);
-    for (const key in params) url.searchParams.append(key, params[key]);
-    try {
-        const response = await fetch(url);
-        return await response.json();
-    } catch (e) {
-        console.error("API Error:", e);
-        return { vips: [], groups: [], allEvents: [] };
-    }
-}
-
-async function refreshData(eventId = null) {
-    const data = await api('getAppData', eventId ? { eventId } : {});
-    renderUI(data);
-}
-
-function renderUI(data) {
-    if(!data || !data.vips) return;
-    document.getElementById('countTotal').innerText = data.vips.length;
-    document.getElementById('countIn').innerText = data.vips.filter(v => v.status === 'Checked In').length;
-    document.getElementById('countLeft').innerText = data.vips.length - data.vips.filter(v => v.status === 'Checked In').length;
+    // CORE CONFIGURATION
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbypBjUw60STU97OEvVglSztRqBk0iqZSKOTe8vRXmc2cw1G3WQwokCa0wC28ZPMnNhBWg/exec";
     
-    document.getElementById('eventDropdown').innerHTML = data.allEvents.map(e => 
-        `<option value="${e.id}" ${e.id == data.activeEventId ? 'selected' : ''}>${e.name}</option>`
-    ).join('');
-    
-    document.getElementById('addEventLabel').innerText = data.activeEventName;
-    document.getElementById('groupSelect').innerHTML = '<option value="" disabled selected>Assign Group...</option>' + 
-        data.groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-    
-    const tbody = document.getElementById('guestTableBody');
-    tbody.innerHTML = data.vips.map(v => `
-        <tr>
-            <td>${v.first}<span class="group-tag">${v.team}</span></td>
-            <td class="fw-bold">${v.last}</td>
-            <td><small>${v.phone}</small></td>
-            <td><small>${v.email}</small></td>
-            <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize}</span></td>
-            <td><button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button></td>
-            <td><button onclick="resend('${v.id}')" style="background:transparent; border:none; cursor:pointer;">🔄</button></td>
-        </tr>
-    `).join('');
-}
+    let currentData = { vips: [], groups: [], allEvents: [], activeEventName: "", activeEventTemplate: "", activeEventSubject: "" };
+    let html5QrcodeScanner = null;
 
-function toggleView(view) {
-    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.querySelectorAll('.control-item').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('view-' + view).style.display = 'block';
-    document.getElementById('nav-' + view).classList.add('active');
-    
-    if (view === 'scan') {
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-            html5QrcodeScanner.render(onScanSuccess);
+    const DEFAULT_BODY_TEXT = `Hi {{FIRST}},
+
+We are excited to see you at {{EVENT}}!
+Please present this QR code at the entrance for VIP access.
+
+Group: {{GROUP}}`;
+
+    const DEFAULT_SUBJECT_TEXT = "Your VIP Access Pass";
+
+    // --- CORE API (Using POST) ---
+    async function api(action, params = {}, silent = false) {
+        if (!silent) showLoader(true);
+        const url = WEB_APP_URL; 
+        const formData = new URLSearchParams();
+        formData.append('action', action);
+        for (const key in params) formData.append(key, params[key]);
+        
+        try {
+            const response = await fetch(url, { method: "POST", body: formData });
+            const text = await response.text();
+            try {
+                const result = JSON.parse(text);
+                if (!silent) showLoader(false);
+                return result;
+            } catch (jsonError) {
+                if (text.trim().startsWith("<")) throw new Error("ACCESS DENIED: Please set Google Script deployment to 'Anyone'.");
+                throw new Error("Invalid Response from Google");
+            }
+        } catch (error) {
+            console.error("Connection Error:", error);
+            if (!silent) { showLoader(false); alert("Sync Error: Check connection."); }
+            return null;
         }
-    } else if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear();
-        html5QrcodeScanner = null;
     }
-}
 
-function onScanSuccess(decodedText) {
-    const urlParams = new URLSearchParams(decodedText.split('?')[1]);
-    const id = urlParams.get('id');
-    if (id) { checkIn(id); alert("Success: Guest Checked In!"); }
-}
-
-async function switchEvent(id) { await refreshData(id); }
-async function checkIn(id) { await api('autoCheckIn', { id }); refreshData(); }
-async function resend(id) { if(confirm("Resend ticket?")) { await api('resendSingleTicket', { guestId: id }); alert("Ticket resent!"); } }
-
-async function createNewEvent() {
-    const name = document.getElementById('newEventName').value;
-    if(name) { 
-        await api('addEvent', { name }); 
-        document.getElementById('newEventName').value = ''; 
-        refreshData(); 
-        alert("Event Created!");
+    function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
+    function showToast(msg) {
+        const toast = document.getElementById("toast");
+        toast.innerText = msg;
+        toast.className = "show";
+        setTimeout(() => { toast.className = ""; }, 3000);
     }
-}
 
-async function createNewGroup() {
-    const name = document.getElementById('newGroupName').value;
-    if(name) { 
-        await api('addGroup', { name }); 
-        document.getElementById('newGroupName').value = ''; 
-        refreshData(); 
-        alert("Group Added!");
+    // --- DATA HANDLING ---
+    async function refreshData(eventId = null) {
+        const data = await api('getAppData', eventId ? { eventId } : {}, true); 
+        if (data) { currentData = data; renderUI(currentData); }
     }
-}
 
-document.getElementById('vipForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const params = {
-        first: document.getElementById('first').value,
-        last: document.getElementById('last').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
-        team: document.getElementById('groupSelect').value,
-        shirtSize: document.getElementById('shirtSize').value
-    };
-    await api('addVip', params);
-    e.target.reset();
-    toggleView('list');
-    refreshData();
-});
+    function renderUI(data) {
+        if (!data || !data.vips) return;
 
-function filterTable() {
-    const val = document.getElementById("search").value.toUpperCase();
-    document.querySelectorAll("#guestTableBody tr").forEach(r => r.style.display = r.innerText.toUpperCase().includes(val) ? "" : "none");
-}
+        // Stats
+        const total = data.vips.length;
+        const inCount = data.vips.filter(v => v.status === 'Checked In').length;
+        document.getElementById('countTotal').innerText = total;
+        document.getElementById('countIn').innerText = inCount;
+        document.getElementById('countLeft').innerText = total - inCount;
 
-window.onload = () => refreshData();
+        // Dropdowns & Labels
+        document.getElementById('eventDropdown').innerHTML = data.allEvents.map(e => `<option value="${e.id}" ${e.id == data.activeEventId ? 'selected' : ''}>${e.name}</option>`).join('');
+        document.getElementById('addEventLabel').innerText = data.activeEventName;
+        document.getElementById('groupSelect').innerHTML = '<option value="" disabled selected>Assign Group...</option>' + data.groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+        
+        // Template Input & Preview
+        const tpl = data.activeEventBody || DEFAULT_BODY_TEXT;
+        const subj = data.activeEventSubject || DEFAULT_SUBJECT_TEXT;
+        document.getElementById('emailTemplateInput').value = tpl;
+        document.getElementById('emailSubjectInput').value = subj;
+        updatePreview(tpl);
+
+        // VIP Table
+        const tbody = document.getElementById('guestTableBody');
+        tbody.innerHTML = data.vips.map(v => `
+            <tr>
+                <td class="fw-bold">${v.first}</td>
+                <td class="fw-bold">${v.last}</td>
+                <td><span class="group-tag">${v.team}</span></td>
+                <td><small>${v.phone}</small></td>
+                <td><small>${v.email}</small></td>
+                <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize}</span></td>
+                <td><button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button></td>
+                <td>
+                    <button onclick="resend('${v.id}')" class="btn-icon">🔄</button>
+                    <button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Group Management List
+        const groupList = document.getElementById('groupListContainer');
+        if (data.groups.length === 0) {
+            groupList.innerHTML = '<p style="color:var(--text-muted); font-style:italic;">No groups added yet.</p>';
+        } else {
+            groupList.innerHTML = '<h3 style="margin-bottom:15px; font-size:1rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Manage Groups</h3>' + 
+            data.groups.map(g => `
+                <div class="group-list-item">
+                    <span>${g.name}</span>
+                    <button onclick="editGroupName('${g.id}', '${g.name}')" class="btn-icon">✏️</button>
+                </div>
+            `).join('');
+        }
+    }
+
+    // --- ACTIONS ---
+    async function checkIn(id) {
+        const guest = currentData.vips.find(g => g.id === id);
+        if (guest) {
+            guest.status = (guest.status === 'Checked In') ? 'Invited' : 'Checked In';
+            renderUI(currentData);
+            const searchVal = document.getElementById("manualCheckInSearch").value;
+            if(searchVal) filterManualCheckIn();
+            showToast(`${guest.status === 'Checked In' ? 'Checked In' : 'Unmarked'}: ${guest.first}`);
+        } else {
+            showToast("Guest ID not found.");
+            return;
+        }
+        await api('autoCheckIn', { id }, true);
+    }
+
+    // --- EDITOR LOGIC ---
+    function insertTag(tag) {
+        const el = document.getElementById('emailTemplateInput');
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const text = el.value;
+        el.value = text.substring(0, start) + tag + text.substring(end);
+        el.focus();
+        el.selectionStart = el.selectionEnd = start + tag.length;
+        updatePreview();
+    }
+
+    function updatePreview(val) {
+        let content = val || document.getElementById('emailTemplateInput').value;
+        // Mock replacements for preview
+        content = content.replace(/{{FIRST}}/g, "Thunder");
+        content = content.replace(/{{LAST}}/g, "Antelope");
+        content = content.replace(/{{EVENT}}/g, "Lip Sync 2026");
+        content = content.replace(/{{GROUP}}/g, "Dance Team");
+        // Convert newlines to br
+        content = content.replace(/\n/g, '<br>');
+        
+        // Wrap in the standard container styling to show user what it looks like
+        const wrapped = `
+            <div id="previewContainer">
+                <h1 style="color: #522d80; margin-top: 0; font-size: 24px;">CAB VIP TICKET</h1>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <div style="font-size: 16px; color: #333; line-height: 1.6;">
+                    ${content}
+                </div>
+                <div style="margin: 30px 0; text-align: center;">
+                    <div style="width:150px; height:150px; background:#eee; display:inline-block; border:4px solid #522d80; padding:10px;">(QR Code Placeholder)</div>
+                </div>
+                <p style="color: #888; font-size: 12px; margin-top: 20px;">Please show this code at the check-in desk.</p>
+            </div>
+        `;
+        document.getElementById('emailPreview').innerHTML = wrapped;
+    }
+
+    function resetTemplate() {
+        document.getElementById('emailTemplateInput').value = DEFAULT_BODY_TEXT;
+        document.getElementById('emailSubjectInput').value = DEFAULT_SUBJECT_TEXT;
+        updatePreview();
+    }
+
+    async function saveEmailTemplate() {
+        const body = document.getElementById('emailTemplateInput').value;
+        const subject = document.getElementById('emailSubjectInput').value;
+        showToast("Saving Template...");
+        const result = await api('saveEventTemplate', { body: body, subject: subject });
+        if(result) { showToast("Template Saved!"); currentData = result; }
+    }
+
+    async function editGroupName(id, currentName) {
+        const newName = prompt("Rename Group:", currentName);
+        if(newName && newName !== currentName) {
+            showToast("Updating Group...");
+            const result = await api('editGroup', { id: id, newName: newName });
+            if(result) { currentData = result; renderUI(currentData); showToast("Group Updated!"); }
+        }
+    }
+
+    async function createNewEvent() {
+        const name = document.getElementById('newEventName').value;
+        if(name) { showToast("Creating Event..."); const res = await api('addEvent', { name }); if(res) { document.getElementById('newEventName').value=''; currentData=res; renderUI(res); showToast("Event Created!"); } }
+    }
+
+    async function createNewGroup() {
+        const name = document.getElementById('newGroupName').value;
+        if(name) { showToast("Adding Group..."); const res = await api('addGroup', { name }); if(res) { document.getElementById('newGroupName').value=''; currentData=res; renderUI(res); showToast("Group Added!"); } }
+    }
+
+    async function switchEvent(id) { await refreshData(id); }
+    async function resend(id) { if(confirm("Resend ticket?")) { showToast("Sending..."); await api('resendSingleTicket', { guestId: id }, true); showToast("Sent!"); } }
+    async function removeGuest(id) {
+        if(confirm("Are you sure you want to remove this VIP?")) {
+            // Optimistic Remove
+            currentData.vips = currentData.vips.filter(v => v.id !== id);
+            renderUI(currentData);
+            showToast("Removing VIP...");
+            // Background Sync
+            await api('removeGuest', { id: id }, true);
+            showToast("VIP Removed");
+        }
+    }
+    
+    async function sendBulk() {
+        if(confirm("Blast tickets?")) {
+            document.getElementById('blastBtn').innerText = "Sending...";
+            await api('sendAllPendingTickets');
+            document.getElementById('blastBtn').innerText = "Send Ticket Email";
+            showToast("Tickets Sent!");
+            refreshData();
+        }
+    }
+
+    document.getElementById('vipForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const params = {
+            first: document.getElementById('first').value, last: document.getElementById('last').value,
+            phone: document.getElementById('phone').value, email: document.getElementById('email').value,
+            team: document.getElementById('groupSelect').value, shirtSize: document.getElementById('shirtSize').value
+        };
+        e.target.reset(); toggleView('list'); showToast("Adding VIP...");
+        const res = await api('addVip', params);
+        if(res) { currentData = res; renderUI(res); showToast("VIP Saved!"); }
+    });
+
+    // --- SCANNER & INPUTS ---
+    document.getElementById('hardwareInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            let val = this.value.trim();
+            if (!val) return;
+            let id = val.includes('id=') ? val.split('id=')[1].split('&')[0] : val;
+            checkIn(id);
+            this.value = '';
+        }
+    });
+
+    function filterManualCheckIn() {
+        const val = document.getElementById("manualCheckInSearch").value.toUpperCase();
+        const resultsDiv = document.getElementById("manualCheckInResults");
+        resultsDiv.innerHTML = "";
+        if (!val) return;
+        const matches = currentData.vips.filter(v => v.first.toUpperCase().includes(val) || v.last.toUpperCase().includes(val));
+        if (matches.length === 0) { resultsDiv.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No matches</div>'; return; }
+        matches.forEach(v => {
+            const div = document.createElement("div");
+            div.className = "manual-result-item";
+            div.innerHTML = `<div><strong>${v.first} ${v.last}</strong><br><span style="font-size:0.7rem; color:#BF5AF2;">${v.team}</span></div><button class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? '✓' : 'MARK'}</button>`;
+            div.querySelector("button").onclick = () => checkIn(v.id);
+            resultsDiv.appendChild(div);
+        });
+    }
+
+    function filterTable() {
+        const val = document.getElementById("search").value.toUpperCase();
+        document.querySelectorAll("#guestTableBody tr").forEach(r => { r.style.display = r.innerText.toUpperCase().includes(val) ? "" : "none"; });
+    }
+
+    function toggleView(view) {
+        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.querySelectorAll('.control-item').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('view-' + view).style.display = 'block';
+        document.getElementById('nav-' + view).classList.add('active');
+        document.getElementById('statsBar').style.display = (view === 'list') ? 'grid' : 'none';
+        
+        if (view === 'scan') {
+            setTimeout(() => document.getElementById('hardwareInput').focus(), 300);
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] });
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+            }
+        } else if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => { html5QrcodeScanner = null; }).catch(() => { html5QrcodeScanner = null; });
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        try {
+            const id = decodedText.includes('id=') ? decodedText.split('id=')[1].split('&')[0] : null;
+            if (id) { checkIn(id); if (window.navigator.vibrate) window.navigator.vibrate(200); }
+        } catch (e) {}
+    }
+    function onScanError(e) {}
+
+    window.onload = () => refreshData();
 </script>
 </body>
 </html>
