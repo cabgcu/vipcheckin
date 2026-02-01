@@ -57,8 +57,8 @@
 
         /* Navigation Bar */
         .topbar {
-            position: sticky;
-            top: 20px;
+            position: relative;
+            top: auto;
             z-index: 50;
             display: flex;
             justify-content: space-between;
@@ -68,6 +68,7 @@
             margin-bottom: 40px;
             margin-top: 20px;
             transition: all 0.3s ease;
+            background: var(--glass-surface);
         }
 
         .brand {
@@ -423,32 +424,33 @@
                 padding: 0 16px; 
             }
             
-            /* Navbar adjustments */
+            /* Navbar adjustments - FIXED */
             .topbar { 
                 flex-direction: column; 
-                gap: 20px; 
+                gap: 16px; 
                 text-align: center; 
                 height: auto; 
-                padding: 20px 16px; 
-                /* Sticky Top Fix for Mobile */
-                position: sticky;
-                top: 0;
-                margin-top: 0;
-                border-radius: 0 0 28px 28px;
-                background: rgba(15, 15, 15, 0.95);
-                border-top: none;
-                border-left: none;
-                border-right: none;
+                padding: 10px 16px; 
+                /* Removed Sticky */
+                position: relative !important;
+                top: auto !important;
+                margin-top: 10px;
+                margin-bottom: 20px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-surface);
             }
-            .brand { flex-direction: column; gap: 10px; }
+            .brand { flex-direction: column; gap: 8px; }
+            .brand-logo { height: 35px; } /* Smaller Logo */
+            .brand-text h1 { font-size: 1.1rem; }
+            
             .controls { flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
-            .control-item { font-size: 0.8rem; padding: 0 14px; height: 40px; flex: 1 1 auto; justify-content: center; }
+            .control-item { font-size: 0.8rem; padding: 0 12px; height: 36px; flex: 1 1 auto; justify-content: center; }
 
             /* Stats Cards */
-            .stats-container { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; margin-top: 10px; }
+            .stats-container { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
             .stat-card { padding: 16px; }
-            .stat-card:last-child { grid-column: span 2; } /* Make 'Remaining' full width on mobile */
-            .stat-val { font-size: 2rem; }
+            .stat-card:last-child { grid-column: span 2; } 
+            .stat-val { font-size: 1.8rem; }
 
             /* List View -> Card View for Mobile */
             table, thead, tbody, th, td, tr { display: block; }
@@ -478,10 +480,18 @@
             }
             .action-wrapper { width: 100%; justify-content: space-between; }
             
-            /* Hide non-essential columns on mobile to save space */
+            /* SHOW Email/Phone now on mobile but smaller */
             td:nth-child(4), /* Phone */
             td:nth-child(5)  /* Email */
-            { display: none; } 
+            { 
+                display: block; 
+                font-size: 0.85rem;
+                opacity: 0.7;
+            } 
+            
+            /* Add labels to phone/email for clarity on mobile */
+            td:nth-child(4)::before { content: "📞 "; }
+            td:nth-child(5)::before { content: "✉️ "; }
 
             /* Form Layouts */
             .form-grid { grid-template-columns: 1fr; gap: 16px; }
@@ -698,7 +708,7 @@
 
 <script>
     // CORE CONFIGURATION
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbypBjUw60STU97OEvVglSztRqBk0iqZSKOTe8vRXmc2cw1G3WQwokCa0wC28ZPMnNhBWg/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzCeM4hKHmRg4dIFh4MZ3PKqcCj0VoXUIKlLD0ThBUdRztmLPF7EWqOhyqoH8CerjzTHg/exec";
     
     let currentData = { vips: [], groups: [], allEvents: [], activeEventName: "", activeEventTemplate: "", activeEventSubject: "" };
     let html5QrcodeScanner = null;
@@ -714,16 +724,25 @@ Group: {{GROUP}}`;
 
     const DEFAULT_SUBJECT_TEXT = "Your VIP Access Pass";
 
-    // --- CORE API (Using POST) ---
-    async function api(action, params = {}, silent = false) {
+    // --- CORE API (Updated to Use GET for Reliability) ---
+    async function api(action, params = {}, silent = false, method = 'GET') {
         if (!silent) showLoader(true);
-        const url = WEB_APP_URL; 
-        const formData = new URLSearchParams();
-        formData.append('action', action);
-        for (const key in params) formData.append(key, params[key]);
         
+        let response;
         try {
-            const response = await fetch(url, { method: "POST", body: formData });
+            // We use POST only for templates (long text). All other actions use GET to avoid CORS/Redirect issues on mobile.
+            if (method === 'POST') {
+                const formData = new URLSearchParams();
+                formData.append('action', action);
+                for (const key in params) formData.append(key, params[key]);
+                response = await fetch(WEB_APP_URL, { method: "POST", body: formData });
+            } else {
+                const url = new URL(WEB_APP_URL);
+                url.searchParams.append('action', action);
+                for (const key in params) url.searchParams.append(key, params[key]);
+                response = await fetch(url.toString(), { method: "GET" });
+            }
+
             const text = await response.text();
             try {
                 const result = JSON.parse(text);
@@ -731,11 +750,11 @@ Group: {{GROUP}}`;
                 return result;
             } catch (jsonError) {
                 if (text.trim().startsWith("<")) throw new Error("ACCESS DENIED: Please set Google Script deployment to 'Anyone'.");
-                throw new Error("Invalid Response from Google");
+                throw new Error("Invalid Response from Google (" + text.substring(0, 50) + "...)");
             }
         } catch (error) {
             console.error("Connection Error:", error);
-            if (!silent) { showLoader(false); alert("Sync Error: Check connection."); }
+            if (!silent) { showLoader(false); showToast("Sync Error: " + error.message); }
             return null;
         }
     }
@@ -902,7 +921,8 @@ Group: {{GROUP}}`;
         const body = document.getElementById('emailTemplateInput').value;
         const subject = document.getElementById('emailSubjectInput').value;
         showToast("Saving Template...");
-        const result = await api('saveEventTemplate', { body: body, subject: subject });
+        // Use POST for large templates
+        const result = await api('saveEventTemplate', { body: body, subject: subject }, false, 'POST');
         if(result) { showToast("Template Saved!"); currentData = result; }
     }
 
@@ -927,15 +947,27 @@ Group: {{GROUP}}`;
 
     async function switchEvent(id) { await refreshData(id); }
     async function resend(id) { if(confirm("Resend ticket?")) { showToast("Sending..."); await api('resendSingleTicket', { guestId: id }, true); showToast("Sent!"); } }
+    
+    // UPDATED REMOVE FUNCTION to fix "Coming Back" bug
     async function removeGuest(id) {
         if(confirm("Are you sure you want to remove this VIP?")) {
-            // Optimistic Remove
+            showToast("Removing VIP...");
+            
+            // 1. Optimistic Remove (Update visual immediately)
             currentData.vips = currentData.vips.filter(v => v.id !== id);
             renderUI(currentData);
-            showToast("Removing VIP...");
-            // Background Sync
-            await api('removeGuest', { id: id }, true);
-            showToast("VIP Removed");
+            
+            // 2. Perform Backend Remove (Using GET)
+            const newData = await api('removeGuest', { id: id }, true);
+            
+            if (newData) {
+                currentData = newData;
+                renderUI(currentData);
+                showToast("VIP Removed");
+            } else {
+                // If deletion failed, the next refresh will simply bring them back (or we could show an error)
+                showToast("Deletion Failed");
+            }
         }
     }
     
