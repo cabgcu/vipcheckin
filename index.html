@@ -350,8 +350,36 @@
             overflow-y: auto;
             border: 1px solid #ccc;
         }
-        #previewContainer {
-            /* Styles handled by JS now */
+
+        /* NEW MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #111;
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: var(--radius-card);
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
 
         /* Loading Indicator */
@@ -510,8 +538,45 @@
 
 <div id="toast">Notification</div>
 
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeEditModal()">×</button>
+        <h2 style="margin-top:0; margin-bottom:20px;">Edit VIP</h2>
+        <form id="editForm" onsubmit="saveEdit(event)">
+            <input type="hidden" id="editId">
+            <div class="form-grid">
+                <div>
+                    <label class="stat-label" style="display:block; margin-bottom: 8px;">First Name</label>
+                    <input type="text" id="editFirst" class="modern-input" required>
+                </div>
+                <div>
+                    <label class="stat-label" style="display:block; margin-bottom: 8px;">Last Name</label>
+                    <input type="text" id="editLast" class="modern-input" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="stat-label" style="display:block; margin-bottom: 8px;">Group</label>
+                <select id="editGroupSelect" class="modern-input" required>
+                    </select>
+            </div>
+            <div class="mb-3">
+                <label class="stat-label" style="display:block; margin-bottom: 8px;">Email <span style="font-weight:normal; opacity:0.6; font-size:0.7em;">(Optional)</span></label>
+                <input type="email" id="editEmail" class="modern-input">
+            </div>
+            <div class="mb-3">
+                <label class="stat-label" style="display:block; margin-bottom: 8px;">Shirt Size</label>
+                <select id="editShirtSize" class="modern-input">
+                    <option value="">None</option>
+                    <option>XS</option><option>S</option><option>M</option><option>L</option>
+                    <option>XL</option><option>2XL</option><option>3XL</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-action" style="width:100%; margin-top:10px;">SAVE CHANGES</button>
+        </form>
+    </div>
+</div>
+
 <div class="app-container">
-    <!-- Navigation Bar -->
     <div class="frosted topbar">
         <div class="brand">
             <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB VIP System" class="brand-logo">
@@ -532,7 +597,6 @@
         </div>
     </div>
 
-    <!-- Stats Bar -->
     <div class="stats-container" id="statsBar">
         <div class="frosted stat-card">
             <span class="stat-label">Total VIPs</span>
@@ -548,7 +612,6 @@
         </div>
     </div>
 
-    <!-- VIEW: VIP LIST -->
     <div id="view-list" class="view">
         <div style="display:flex; gap:12px; margin-bottom: 30px;">
             <input type="text" id="search" class="modern-input" placeholder="Search first name, last name, or group..." onkeyup="filterTable()" style="flex:1;">
@@ -573,12 +636,10 @@
         </div>
     </div>
 
-    <!-- VIEW: CHECK IN / SCANNER -->
     <div id="view-scan" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 style="text-align:center; margin-bottom:20px; font-weight: 800;">CHECK IN</h2>
             
-            <!-- Manual Check-In -->
             <div style="margin-bottom: 30px;">
                 <label class="stat-label" style="display:block; margin-bottom: 10px;">Manual Check-In</label>
                 <input type="text" id="manualCheckInSearch" class="modern-input" placeholder="Type first or last name..." onkeyup="filterManualCheckIn()">
@@ -587,7 +648,6 @@
 
             <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 30px 0;">
 
-            <!-- Hardware Input -->
             <label class="stat-label" style="display:block; margin-bottom: 10px;">USB Scanner Input</label>
             <input type="text" id="hardwareInput" class="modern-input" placeholder="Click here to scan ticket..." style="text-align:center; margin-bottom: 20px; background: rgba(10, 132, 255, 0.1); border-color: rgba(10, 132, 255, 0.3);" autocomplete="off">
             
@@ -598,7 +658,6 @@
         </div>
     </div>
 
-    <!-- VIEW: ADD VIP -->
     <div id="view-add" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 class="mb-4">Add VIP to <span id="addEventLabel" style="color:#BF5AF2">...</span></h2>
@@ -619,8 +678,8 @@
                         <input type="tel" id="phone" class="modern-input" placeholder="(000) 000-0000">
                     </div>
                     <div>
-                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Email Address</label>
-                        <input type="email" id="email" class="modern-input" placeholder="john@gcu.edu" required>
+                        <label class="stat-label" style="display:block; margin-bottom: 8px;">Email Address <span style="font-weight:normal; opacity:0.6; font-size:0.7em;">(Optional)</span></label>
+                        <input type="email" id="email" class="modern-input" placeholder="john@gcu.edu">
                     </div>
                 </div>
                 <div class="form-grid">
@@ -649,7 +708,6 @@
         </div>
     </div>
 
-    <!-- VIEW: SETTINGS -->
     <div id="view-settings" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 class="mb-4">System Setup</h2>
@@ -670,7 +728,6 @@
             
             <hr style="border:0; border-top:1px solid var(--glass-border); margin:30px 0;">
             
-            <!-- Email Template Editor -->
             <div style="margin-bottom:30px;">
                 <label class="stat-label" style="display:block; margin-bottom: 12px;">Email Template</label>
                 
@@ -696,7 +753,6 @@
                 </div>
             </div>
 
-            <!-- Group Management -->
             <div id="groupListContainer">
                 <p style="color:var(--text-muted); font-style:italic;">Loading groups...</p>
             </div>
@@ -712,7 +768,10 @@
     let html5QrcodeScanner = null;
     let lastScannedId = null;
     let scanCooldown = false;
-    let isProcessingScan = false; // New global scanner lock
+    let isProcessingScan = false;
+    
+    // NEW: Variable to track if groups have changed to prevent dropdown flicker
+    let cachedGroupsJSON = ""; 
 
     const DEFAULT_BODY_TEXT = `Hi {{FIRST}},
 
@@ -723,13 +782,12 @@ Group: {{GROUP}}`;
 
     const DEFAULT_SUBJECT_TEXT = "Your VIP Access Pass";
 
-    // --- CORE API (Updated to Use GET for Reliability) ---
+    // --- CORE API ---
     async function api(action, params = {}, silent = false, method = 'GET') {
         if (!silent) showLoader(true);
         
         let response;
         try {
-            // We use POST only for templates (long text). All other actions use GET to avoid CORS/Redirect issues on mobile.
             if (method === 'POST') {
                 const formData = new URLSearchParams();
                 formData.append('action', action);
@@ -771,7 +829,6 @@ Group: {{GROUP}}`;
         const data = await api('getAppData', eventId ? { eventId } : {}, true); 
         if (data) { 
             currentData = data; 
-            // Only update inputs if this is NOT a silent poll (i.e., user switched event or initial load)
             renderUI(currentData, !silent); 
         }
     }
@@ -786,14 +843,23 @@ Group: {{GROUP}}`;
         document.getElementById('countIn').innerText = inCount;
         document.getElementById('countLeft').innerText = total - inCount;
 
-        // Dropdowns & Labels
-        document.getElementById('eventDropdown').innerHTML = data.allEvents.map(e => `<option value="${e.id}" ${e.id == data.activeEventId ? 'selected' : ''}>${e.name}</option>`).join('');
+        // Events Dropdown
+        const eventDropdown = document.getElementById('eventDropdown');
+        if (document.activeElement !== eventDropdown) {
+             eventDropdown.innerHTML = data.allEvents.map(e => `<option value="${e.id}" ${e.id == data.activeEventId ? 'selected' : ''}>${e.name}</option>`).join('');
+        }
         document.getElementById('addEventLabel').innerText = data.activeEventName;
-        document.getElementById('groupSelect').innerHTML = '<option value="" disabled selected>Assign Group...</option>' + data.groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-        
-        // Template Input & Preview
-        // Only overwrite text areas if we switched events or loaded fresh. 
-        // DO NOT overwrite on background polling to prevent data loss while typing.
+
+        // --- BUG FIX FOR GROUP DROPDOWN ---
+        // Only update the group dropdown if the data has actually changed
+        const newGroupsJSON = JSON.stringify(data.groups);
+        if (newGroupsJSON !== cachedGroupsJSON) {
+            const optionsHTML = '<option value="">Assign Group...</option>' + data.groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+            document.getElementById('groupSelect').innerHTML = optionsHTML;
+            document.getElementById('editGroupSelect').innerHTML = optionsHTML; // Update edit modal too
+            cachedGroupsJSON = newGroupsJSON;
+        }
+
         if (updateInputs) {
             const tpl = data.activeEventBody || DEFAULT_BODY_TEXT;
             const subj = data.activeEventSubject || DEFAULT_SUBJECT_TEXT;
@@ -819,6 +885,7 @@ Group: {{GROUP}}`;
                             ${v.sent === 'Yes' ? '✉️ SENT' : '⚠️ UNSENT'}
                         </span>
                         <div>
+                            <button onclick="openEditModal('${v.id}')" class="btn-icon" title="Edit">✏️</button>
                             <button onclick="resend('${v.id}')" class="btn-icon" title="Send/Resend">🔄</button>
                             <button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;" title="Remove">🗑️</button>
                         </div>
@@ -844,21 +911,18 @@ Group: {{GROUP}}`;
 
     // --- ACTIONS ---
     async function checkIn(id, isScan = false) {
-        // Prevent Double Scans
         if (isScan && scanCooldown && lastScannedId === id) return;
         
         const guest = currentData.vips.find(g => g.id === id);
         if (guest) {
             if (isScan) {
-                // If scanning, DO NOT uncheck. Only check in.
                 if (guest.status === 'Checked In') {
                     showToast(`⚠️ Already Checked In: ${guest.first}`);
                     setCooldown(id);
-                    return; // Stops execution so it doesn't toggle off
+                    return; 
                 }
             }
 
-            // Normal Toggle or Initial Check In
             guest.status = (guest.status === 'Checked In') ? 'Invited' : 'Checked In';
             renderUI(currentData);
             const searchVal = document.getElementById("manualCheckInSearch").value;
@@ -876,8 +940,54 @@ Group: {{GROUP}}`;
     function setCooldown(id) {
         lastScannedId = id;
         scanCooldown = true;
-        setTimeout(() => { scanCooldown = false; lastScannedId = null; }, 3000); // 3 second lockout for same ID
+        setTimeout(() => { scanCooldown = false; lastScannedId = null; }, 3000); 
     }
+
+    // --- NEW: EDIT FUNCTIONS ---
+    function openEditModal(id) {
+        const guest = currentData.vips.find(v => v.id === id);
+        if(!guest) return;
+
+        document.getElementById('editId').value = id;
+        document.getElementById('editFirst').value = guest.first;
+        document.getElementById('editLast').value = guest.last;
+        document.getElementById('editEmail').value = guest.email;
+        document.getElementById('editGroupSelect').value = guest.team;
+        document.getElementById('editShirtSize').value = guest.shirtSize;
+
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    async function saveEdit(e) {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const params = {
+            id: id,
+            first: document.getElementById('editFirst').value,
+            last: document.getElementById('editLast').value,
+            email: document.getElementById('editEmail').value,
+            team: document.getElementById('editGroupSelect').value,
+            shirtSize: document.getElementById('editShirtSize').value
+        };
+
+        // Optimistic UI Update
+        const guestIndex = currentData.vips.findIndex(v => v.id === id);
+        if (guestIndex !== -1) {
+            currentData.vips[guestIndex] = { ...currentData.vips[guestIndex], ...params };
+            renderUI(currentData);
+        }
+
+        closeEditModal();
+        showToast("Saving Changes...");
+        
+        await api('editVip', params, true); 
+        showToast("Changes Saved!");
+    }
+
 
     // --- EDITOR LOGIC ---
     function insertTag(tag) {
@@ -893,34 +1003,23 @@ Group: {{GROUP}}`;
 
     function updatePreview(val) {
         let content = val || document.getElementById('emailTemplateInput').value;
-        // Mock replacements for preview
         content = content.replace(/{{FIRST}}/g, "Thunder");
         content = content.replace(/{{LAST}}/g, "Antelope");
         content = content.replace(/{{EVENT}}/g, "Lip Sync 2026");
         content = content.replace(/{{GROUP}}/g, "Dance Team");
-        // Convert newlines to br
         content = content.replace(/\n/g, '<br>');
         
-        // Wrap in the standard container styling to show user what it looks like
         const wrapped = `
             <div id="previewContainer" style="background-color: #f3f4f6; padding: 20px; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; border-radius: 12px;">
                 <div style="max-width: 100%; margin: 0 auto; background-color: #ffffff; background-image: linear-gradient(#ffffff,#ffffff); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                    
-                    <!-- HEADER STRIP (BLACK) -->
                     <div style="background-color: #000000; background-image: linear-gradient(#000000,#000000); padding: 24px; color: #ffffff; text-align: center;">
                         <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">VIP Access Pass</h1>
                         <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8; font-weight: 500; color: #cccccc;">OFFICIAL ENTRY TICKET</p>
                     </div>
-
-                    <!-- EDITABLE BODY CONTENT -->
                     <div style="padding: 40px 30px; font-size: 16px; color: #333333; line-height: 1.6;">
                         ${content}
                     </div>
-
-                    <!-- DIVIDER -->
                     <div style="padding: 0 15px;"><div style="border-top: 2px dashed #e5e7eb; width: 100%;"></div></div>
-
-                    <!-- QR CODE SECTION -->
                     <div style="text-align: center; padding: 40px 30px; background-color: #f9fafb;">
                         <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; display: inline-block;">
                              <div style="width:150px; height:150px; background:#eee; display:flex; align-items:center; justify-content:center; color:#999; font-weight:bold; letter-spacing:1px;">QR CODE</div>
@@ -928,14 +1027,11 @@ Group: {{GROUP}}`;
                         <p style="margin: 20px 0 0 0; font-size: 13px; color: #6b7280; font-weight: 600;">SCAN AT ENTRY</p>
                         <p style="margin: 5px 0 0 0; font-size: 11px; color: #9ca3af;">ID: #VIP-123456</p>
                     </div>
-
-                    <!-- FOOTER (BLACK) -->
                     <div style="background-color: #000000; background-image: linear-gradient(#000000,#000000); padding: 20px; color: #9ca3af; font-size: 12px; text-align: center;">
                         <p style="margin: 0; font-weight: 700; color: #ffffff;">&copy; Canyon Activities Board</p>
                         <p style="margin: 5px 0 0 0; color: #bf5af2;">Follow us @cabgcu</p>
                         <p style="margin: 15px 0 0 0; opacity: 0.6;">This ticket is non-transferable.</p>
                     </div>
-
                 </div>
             </div>
         `;
@@ -952,7 +1048,6 @@ Group: {{GROUP}}`;
         const body = document.getElementById('emailTemplateInput').value;
         const subject = document.getElementById('emailSubjectInput').value;
         showToast("Saving Template...");
-        // Use POST for large templates
         const result = await api('saveEventTemplate', { body: body, subject: subject }, false, 'POST');
         if(result) { showToast("Template Saved!"); currentData = result; }
     }
@@ -974,7 +1069,7 @@ Group: {{GROUP}}`;
             if(res) { 
                 document.getElementById('newEventName').value=''; 
                 currentData=res; 
-                renderUI(res, true); // Force update inputs
+                renderUI(res, true); 
                 showToast("Event Created!"); 
             } 
         }
@@ -988,24 +1083,17 @@ Group: {{GROUP}}`;
     async function switchEvent(id) { await refreshData(id); }
     async function resend(id) { if(confirm("Resend ticket?")) { showToast("Sending..."); await api('resendSingleTicket', { guestId: id }, true); showToast("Sent!"); } }
     
-    // UPDATED REMOVE FUNCTION to fix "Coming Back" bug
     async function removeGuest(id) {
         if(confirm("Are you sure you want to remove this VIP?")) {
             showToast("Removing VIP...");
-            
-            // 1. Optimistic Remove (Update visual immediately)
             currentData.vips = currentData.vips.filter(v => v.id !== id);
             renderUI(currentData);
-            
-            // 2. Perform Backend Remove (Using GET)
             const newData = await api('removeGuest', { id: id }, true);
-            
             if (newData) {
                 currentData = newData;
                 renderUI(currentData);
                 showToast("VIP Removed");
             } else {
-                // If deletion failed, the next refresh will simply bring them back (or we could show an error)
                 showToast("Deletion Failed");
             }
         }
@@ -1029,14 +1117,10 @@ Group: {{GROUP}}`;
             team: document.getElementById('groupSelect').value, shirtSize: document.getElementById('shirtSize').value
         };
         
-        // UI Updates
         e.target.reset(); 
-        document.getElementById('first').focus(); // Keep focus here for rapid entry
+        document.getElementById('first').focus(); 
         showToast("Adding VIP...");
         
-        // Remove the toggleView call so it stays on the Add screen
-        // toggleView('list'); 
-
         const res = await api('addVip', params);
         if(res) { currentData = res; renderUI(res); showToast("VIP Saved!"); }
     });
@@ -1097,22 +1181,19 @@ Group: {{GROUP}}`;
     }
 
     function onScanSuccess(decodedText) {
-        // Global Lock: If we are already processing a scan, ignore everything
         if (isProcessingScan) return;
 
         try {
             const id = decodedText.includes('id=') ? decodedText.split('id=')[1].split('&')[0] : null;
             if (id) { 
-                isProcessingScan = true; // Lock the scanner
+                isProcessingScan = true; 
                 
                 checkIn(id, true); 
                 if (window.navigator.vibrate) window.navigator.vibrate(200);
 
-                // Release lock after 2.5 seconds
                 setTimeout(() => { isProcessingScan = false; }, 2500);
             }
         } catch (e) {
-            // If error, release lock immediately so they can try again
             isProcessingScan = false;
         }
     }
@@ -1120,7 +1201,6 @@ Group: {{GROUP}}`;
 
     window.onload = () => {
         refreshData();
-        // Polling for live updates every 5 seconds
         setInterval(() => refreshData(null, true), 5000); 
     };
 </script>
