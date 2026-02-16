@@ -20,7 +20,6 @@
             --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
             --gradient-danger: linear-gradient(135deg, #FF3B30, #FF9500);
             
-            /* Matching Voting App UI Tokens */
             --radius-card: 28px;
             --radius-input: 20px;
             --radius-button: 100px;
@@ -105,7 +104,6 @@
         .stat-card { padding: 24px; border-radius: var(--radius-card); text-align: center; transition: transform 0.3s ease; }
         .stat-val { font-size: 2.8rem; font-weight: 800; display: block; letter-spacing: -0.02em; }
         
-        /* UPDATED LABEL STYLING FOR BETTER SPACING */
         .stat-label { 
             font-size: 0.8rem; 
             text-transform: uppercase; 
@@ -191,6 +189,7 @@
         .form-card { padding: 40px; border-radius: var(--radius-card); max-width: 1000px; margin: 0 auto; }
         .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .tag-chip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; margin-bottom: 5px; }
+        .tag-chip.bold-btn { border-color: #0A84FF; font-weight: 800; color: #0A84FF; }
         #emailPreview { background: #f4f4f4; color: #000; border-radius: 12px; padding: 0; height: 400px; overflow-y: auto; border: 1px solid #ccc; font-family: sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
@@ -292,7 +291,7 @@
     <div id="view-list" class="view">
         <div style="display:flex; gap:12px; margin-bottom: 30px;">
             <input type="text" id="search" class="modern-input" placeholder="Search name or group..." onkeyup="filterTable()" style="flex:1;">
-            <button onclick="sendBulk()" id="blastBtn" class="btn-action">Send Tickets (Eligible)</button>
+            <button onclick="sendBulk()" id="blastBtn" class="btn-action">Email Tickets (Eligible)</button>
         </div>
         <div class="table-container">
             <table>
@@ -361,6 +360,7 @@
                 <div class="editor-grid">
                     <div>
                         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                            <button type="button" class="tag-chip bold-btn" onclick="insertTag('**Bold Text**')"><b>B</b> Bold</button>
                             <button type="button" class="tag-chip" onclick="insertTag('{{FIRST}}')">+ First Name</button>
                             <button type="button" class="tag-chip" onclick="insertTag('{{EVENT}}')">+ Event</button>
                             <button type="button" class="tag-chip" onclick="insertTag('{{GROUP}}')">+ Group</button>
@@ -406,7 +406,13 @@
         const input = document.getElementById('emailTemplateInput');
         const preview = document.getElementById('emailPreview');
         if (!input || !preview) return;
-        preview.innerHTML = `<div style="background:#fff; color:#000; padding:20px; border-radius:12px;">${input.value.replace(/\n/g, '<br>')}</div>`;
+        
+        // Convert Markdown **bold** to HTML <b> tags for preview
+        let content = input.value
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\n/g, '<br>');
+            
+        preview.innerHTML = `<div style="background:#fff; color:#000; padding:20px; border-radius:12px; height: 100%; overflow-y: auto;">${content}</div>`;
     }
 
     async function setupRealtime() {
@@ -524,7 +530,6 @@
         showToast("Saving...");
         const updates = [];
         for (const [id, fields] of Object.entries(pendingEdits)) {
-            // Requirement: If email is edited, set email_sent to 'No' to require a new ticket
             const originalGuest = currentData.vips.find(v => v.id === id);
             if (fields.email !== undefined && fields.email !== originalGuest.email) {
                 fields.email_sent = 'No';
@@ -659,10 +664,24 @@
         const isStaff = STAFF_DEPTS.includes(team);
         const isPartyGuest = team.startsWith("Guest of ");
         if (!isStaff && !isPartyGuest) { showToast("⚠️ Main Contacts do not receive tickets."); return; }
+        
         let subj = isStaff ? currentData.staffSubj : currentData.guestSubj;
         let body = isStaff ? currentData.staffBody : currentData.guestBody;
-        showToast(`Mailing...`);
-        const params = new URLSearchParams({ action: 'sendMail', id: guest.id, first: guest.first, email: guest.email, eventName: currentData.activeEventName, subject: subj, body: body });
+        
+        // Convert Markdown Bold to HTML Bold for the actual email delivery
+        body = body.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+        showToast(`Emailing...`);
+        const params = new URLSearchParams({ 
+            action: 'sendMail', 
+            id: guest.id, 
+            first: guest.first, 
+            email: guest.email, 
+            eventName: currentData.activeEventName, 
+            subject: subj, 
+            body: body 
+        });
+        
         await fetch(`${WEB_APP_URL}?${params.toString()}`, { mode: 'no-cors' });
         await _supabase.from('guests').update({ email_sent: 'Yes' }).eq('id', id);
         showToast("Sent!");
@@ -709,7 +728,19 @@
         });
     }
 
-    function insertTag(t) { const input = document.getElementById('emailTemplateInput'); if (input) { input.value += t; updatePreview(); } }
+    function insertTag(t) { 
+        const input = document.getElementById('emailTemplateInput'); 
+        if (input) { 
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            input.value = text.substring(0, start) + t + text.substring(end);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + t.length;
+            updatePreview(); 
+        } 
+    }
+    
     function resetTemplate() { 
         const type = currentTemplateType;
         if (DEFAULTS[type]) { document.getElementById('emailTemplateInput').value = DEFAULTS[type].body; document.getElementById('emailSubjectInput').value = DEFAULTS[type].subj; updatePreview(); }
@@ -726,7 +757,7 @@
 
     async function removeGuest(id) { if(confirm("Delete?")) { await _supabase.from('guests').delete().eq('id', id); showToast("Deleted"); } }
     async function sendBulk() { 
-        if(confirm("Send to all eligible unsent?")) { 
+        if(confirm("Email all eligible unsent tickets?")) { 
             const unsent = currentData.vips.filter(v => (STAFF_DEPTS.includes(v.team) || v.team.startsWith("Guest of ")) && v.sent !== 'Yes' && v.email);
             if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
             showToast(`Processing ${unsent.length} emails...`);
