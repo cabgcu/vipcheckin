@@ -127,7 +127,6 @@
             border: 1px solid var(--glass-border); 
         }
 
-        /* INCREASED GAP FOR BETTER UI BREATHING ROOM */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
         .table-container { margin-top: 20px; border-radius: var(--radius-card); overflow: hidden; overflow-x: auto; }
 
@@ -157,7 +156,6 @@
         }
         .btn-action:active { transform: scale(0.96); }
 
-        /* REFINED MODERN INPUTS & SELECTS */
         .modern-input { 
             width: 100%; 
             background: rgba(255, 255, 255, 0.05); 
@@ -180,7 +178,7 @@
             background-size: 16px;
             padding-right: 40px;
             cursor: pointer;
-            height: 50px; /* Fixed height for consistency */
+            height: 50px;
         }
         
         select.modern-input option {
@@ -226,9 +224,6 @@
             td:first-child { border-radius: 0; padding-bottom: 8px; font-size: 1.1rem; }
             td:last-child { border-radius: 0; margin-top: 10px; display: block; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
             .action-wrapper { width: 100%; justify-content: space-between; }
-            td:nth-child(4), td:nth-child(5) { display: block; font-size: 0.85rem; opacity: 0.7; } 
-            td:nth-child(4)::before { content: "📞 "; } td:nth-child(5)::before { content: "✉️ "; }
-            .form-grid { grid-template-columns: 1fr; gap: 16px; } .editor-grid { grid-template-columns: 1fr; } .form-card { padding: 24px 16px; }
         }
     </style>
 </head>
@@ -245,13 +240,11 @@
         <h2 style="color:#34C759; margin:0; font-size:2rem; font-weight:800;">CHECKED IN</h2>
         <h3 id="alertGuestName" style="color:#fff; margin:15px 0 5px 0; font-size:1.4rem;">Guest Name</h3>
         <h4 id="alertGuestGroup" style="color:var(--text-muted); margin:0 0 20px 0; text-transform:uppercase; letter-spacing:1px; font-size:0.9rem;">VIP GROUP</h4>
-        
         <div id="shirtDisplaySection">
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
             <div style="font-size:1rem; color:#BF5AF2; font-weight:bold; letter-spacing:1px;">SHIRT SIZE</div>
             <h1 id="alertShirtSize" style="font-size:4rem; margin:10px 0; color:#fff;">XL</h1>
         </div>
-        
         <div style="margin-top:20px; font-size:0.8rem; color:#666; font-style:italic;">Tap anywhere or press ESC to close</div>
     </div>
 </div>
@@ -261,11 +254,9 @@
     <div class="modal-content">
         <button class="close-modal" onclick="closePartyModal()">×</button>
         <h2 style="margin-top:0; margin-bottom:10px;">Manage Registration</h2>
-        <div style="font-size:0.9rem; color:var(--text-muted); margin-bottom:20px;">Edit main contact or party members.</div>
-        
+        <div style="font-size:0.9rem; color:var(--text-muted); margin-bottom:20px;">Edit main contact or party members. <span style="color:#FF9500;">Editing an email will invalidate the old ticket.</span></div>
         <form id="partyForm" onsubmit="saveParty(event)">
             <div id="partyContainer"></div>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
                 <button type="button" class="btn-action" style="background:rgba(255,255,255,0.1); font-size:0.9rem;" onclick="addPartyGuestUI()">+ Add Guest</button>
                 <button type="submit" class="btn-action" style="padding:12px 30px;">SAVE ALL CHANGES</button>
@@ -311,7 +302,7 @@
         </div>
     </div>
 
-    <!-- VIEW: SCAN / MANUAL SEARCH -->
+    <!-- VIEW: SCAN -->
     <div id="view-scan" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 style="text-align:center; margin-bottom:20px; font-weight: 800;">CHECK IN</h2>
@@ -323,9 +314,6 @@
             <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 30px 0;">
             <label class="stat-label">Hardware Scanner Input</label>
             <input type="text" id="hardwareInput" class="modern-input" placeholder="Ready to scan..." style="text-align:center; margin-bottom: 20px; background: rgba(10, 132, 255, 0.1); border-color: rgba(10, 132, 255, 0.3);" autocomplete="off">
-            <div style="margin-top:30px; text-align: center;">
-                <p style="color:var(--text-muted); font-size:0.95rem;">Focus this box to use a USB barcode scanner.</p>
-            </div>
         </div>
     </div>
 
@@ -333,7 +321,6 @@
     <div id="view-add" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 class="mb-4">Add VIP Registration</h2>
-            
             <label class="stat-label">Registration Type</label>
             <select id="formTypeSelector" class="modern-input" style="margin-bottom:25px;" onchange="renderAddForm(this.value)">
                 <option value="staff">Staff Early Access (Max 3 Guests)</option>
@@ -342,7 +329,6 @@
                 <option value="special">VIP Special Events (Max 5 Guests)</option>
                 <option value="single">Single / Manual Add (Flexible)</option>
             </select>
-
             <form id="addForm">
                 <div id="dynamicFormContainer"></div>
                 <button type="submit" class="btn-action" style="width:100%; padding:18px; margin-top:20px; font-size:1.1rem;">SUBMIT REGISTRATION</button>
@@ -350,7 +336,7 @@
         </div>
     </div>
 
-    <!-- VIEW: SETTINGS / TEMPLATES -->
+    <!-- VIEW: SETTINGS -->
     <div id="view-settings" class="view" style="display:none;">
         <div class="frosted form-card">
             <h2 class="mb-4">System Setup</h2>
@@ -361,7 +347,6 @@
                     <button onclick="createNewEvent()" class="btn-action">Create</button>
                 </div>
             </div>
-            
             <hr style="border:0; border-top:1px solid var(--glass-border); margin:30px 0;">
             <div style="margin-bottom:30px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -397,7 +382,6 @@
 </div>
 
 <script>
-    // --- 1. CONFIGURATION ---
     const SUPABASE_URL = 'https://raraxpjsftqxhwkpwpab.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_p4FqN3nJTT5GFNU_xqZtYg_7fPtkKhS';
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpY9ROdJ-IlkZpTIoBskRX7g2cQ-noSOF6EYti4IOUR61sHv9XVHyDerSp6QbadvdzOA/exec";
@@ -405,8 +389,6 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentData = { vips: [], groups: [], allEvents: [], activeId: "" };
-    let lastScannedId = null;
-    let scanCooldown = false;
     let realtimeSubscription = null;
     let currentParty = []; 
     let currentTemplateType = 'vip';
@@ -415,21 +397,11 @@
     const STAFF_DEPTS = ["Campus Health", "Campus Recreation", "Club Sports", "Community Standards", "Housing Operations", "Residence Life", "Spiritual Life", "Student Care", "Student Engagement", "Welcome Programs", "Other", "Staff Early Access"];
 
     const DEFAULTS = {
-        vip: { 
-            subj: "🎤 GCU's Got Talent VIP Details – March 4th!", 
-            body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you’re signed up as a VIP for GCU's Got Talent on March 4th! 🎉🎉🎉\n\n**This email serves as your official ticket for entry.**\n\nCheck-in Time: 5:45–6:30 PM.\nLocation: Near the Colangelo Museum.\n\nThank you for helping make GCU's Got Talent such an exciting event!\n– CAB Special Events Team" 
-        },
-        staff: { 
-            subj: "🎤 GCU's Got Talent Staff Early Access – March 4th!", 
-            body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up as Staff for Early Access! 🎉🎉🎉\n\n**This email contains your Staff Access ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" 
-        },
-        guest: { 
-            subj: "🎤 GCU's Got Talent Early Access Details – March 4th!", 
-            body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up for Early Access to GCU's Got Talent! 🎉🎉🎉\n\n**This email is your entry ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" 
-        }
+        vip: { subj: "🎤 GCU's Got Talent VIP Details – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you’re signed up as a VIP for GCU's Got Talent on March 4th! 🎉🎉🎉\n\n**This email serves as your official ticket for entry.**\n\nCheck-in Time: 5:45–6:30 PM.\nLocation: Near the Colangelo Museum.\n\nThank you for helping make GCU's Got Talent such an exciting event!\n– CAB Special Events Team" },
+        staff: { subj: "🎤 GCU's Got Talent Staff Early Access – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up as Staff for Early Access! 🎉🎉🎉\n\n**This email contains your Staff Access ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" },
+        guest: { subj: "🎤 GCU's Got Talent Early Access Details – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up for Early Access to GCU's Got Talent! 🎉🎉🎉\n\n**This email is your entry ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" }
     };
 
-    // --- UTILITY: UPDATE PREVIEW ---
     function updatePreview() {
         const input = document.getElementById('emailTemplateInput');
         const preview = document.getElementById('emailPreview');
@@ -437,7 +409,6 @@
         preview.innerHTML = `<div style="background:#fff; color:#000; padding:20px; border-radius:12px;">${input.value.replace(/\n/g, '<br>')}</div>`;
     }
 
-    // --- 2. DATA SYNC ---
     async function setupRealtime() {
         if (realtimeSubscription) _supabase.removeChannel(realtimeSubscription);
         realtimeSubscription = _supabase.channel('public:guests')
@@ -447,32 +418,24 @@
 
     async function refreshData(eventId = null, silent = false) {
         if (!silent) document.getElementById('loader').style.display = 'flex';
-        
         let activeId = eventId || localStorage.getItem('activeEventId') || 'd348c450-ffb3-47f6-9abc-adac8d86df2e';
         localStorage.setItem('activeEventId', activeId);
-
         const [eventsRes, groupsRes, guestsRes] = await Promise.all([
             _supabase.from('events').select('*'),
             _supabase.from('groups').select('*').eq('event_id', activeId),
             _supabase.from('guests').select('*').eq('event_id', activeId).order('first_name')
         ]);
-
         let eventsData = eventsRes.data || [];
-        let groupsData = groupsRes.data || [];
         let guestsData = guestsRes.data || [];
-
         let activeEvent = eventsData.find(e => e.id === activeId) || eventsData[0];
-        if (activeEvent) {
-            activeId = activeEvent.id;
-            localStorage.setItem('activeEventId', activeId);
-        }
+        if (activeEvent) { activeId = activeEvent.id; localStorage.setItem('activeEventId', activeId); }
 
         currentData = {
             vips: guestsData.map(g => ({
                 id: g.id, first: g.first_name, last: g.last_name, team: g.team,
                 phone: g.phone, email: g.email, shirtSize: g.shirt_size, status: g.status, sent: g.email_sent
             })),
-            groups: groupsData,
+            groups: groupsRes.data || [],
             allEvents: eventsData,
             activeId: activeId,
             activeEventName: activeEvent?.name || "No Event",
@@ -483,22 +446,17 @@
             guestSubj: activeEvent?.template_guest_subject || DEFAULTS.guest.subj,
             guestBody: activeEvent?.template_guest_body || DEFAULTS.guest.body
         };
-
         renderUI();
         if (!silent) document.getElementById('loader').style.display = 'none';
     }
 
     function renderUI() {
         const dropdown = document.getElementById('eventDropdown');
-        if (dropdown) {
-            dropdown.innerHTML = currentData.allEvents.map(e => `<option value="${e.id}" ${e.id == currentData.activeId ? 'selected' : ''}>${e.name}</option>`).join('');
-        }
-        
+        if (dropdown) dropdown.innerHTML = currentData.allEvents.map(e => `<option value="${e.id}" ${e.id == currentData.activeId ? 'selected' : ''}>${e.name}</option>`).join('');
         const checkedIn = currentData.vips.filter(v => v.status === 'Checked In').length;
         document.getElementById('countTotal').innerText = currentData.vips.length;
         document.getElementById('countIn').innerText = checkedIn;
         document.getElementById('countLeft').innerText = currentData.vips.length - checkedIn;
-
         const tableBody = document.getElementById('guestTableBody');
         if (tableBody) {
             tableBody.innerHTML = currentData.vips.map(v => `
@@ -511,26 +469,14 @@
                     <td><div class="action-wrapper"><span class="status-badge ${v.sent === 'Yes' ? 'sent' : 'draft'}">${v.sent === 'Yes' ? '✉️ SENT' : '⚠️ UNSENT'}</span><button onclick="openPartyModal('${v.id}')" class="btn-icon">✏️</button><button onclick="resend('${v.id}')" class="btn-icon" style="${!v.email ? 'opacity:0.3; pointer-events:none' : ''}">🔄</button><button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;">🗑️</button></div></td>
                 </tr>`).join('');
         }
-        
         loadTemplateToEditor();
     }
 
-    // --- 3. PARTY MANAGEMENT MODAL (Edit Logic) ---
     function openPartyModal(id) {
         const user = currentData.vips.find(v => v.id === id);
         if (!user) return;
-        
-        let hostName = "";
-        let host = user;
-        
-        if (user.team.startsWith("Guest of ")) {
-            hostName = user.team.replace("Guest of ", "").trim();
-            const foundHost = currentData.vips.find(v => (v.first + " " + v.last).trim() === hostName && !v.team.startsWith("Guest of "));
-            if(foundHost) host = foundHost; 
-        } else {
-            hostName = (user.first + " " + user.last).trim();
-        }
-
+        let hostName = user.team.startsWith("Guest of ") ? user.team.replace("Guest of ", "").trim() : (user.first + " " + user.last).trim();
+        const host = currentData.vips.find(v => (v.first + " " + v.last).trim() === hostName && !v.team.startsWith("Guest of ")) || user;
         currentParty = [host, ...currentData.vips.filter(v => v.team === `Guest of ${hostName}`)];
         renderPartyModal();
         document.getElementById('partyModal').style.display = 'flex';
@@ -541,12 +487,10 @@
         if (!container) return;
         let html = '';
         const shirtOptions = `<option value="">None</option><option value="Medium">Medium</option><option value="Large">Large</option><option value="X-Large">X-Large</option><option value="XX-Large">XX-Large</option><option value="XXX-Large">XXX-Large</option>`;
-
         currentParty.forEach((member, index) => {
             const isHost = index === 0;
             const sVal = member.shirtSize || "";
             const sOpts = shirtOptions.replace(`value="${sVal}"`, `value="${sVal}" selected`);
-
             html += `
             <div class="party-member">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
@@ -554,15 +498,15 @@
                     ${!isHost ? `<button type="button" onclick="removePartyMember('${member.id}')" style="color:#FF3B30; background:none; border:none; cursor:pointer; font-weight:bold;">REMOVE</button>` : ''}
                 </div>
                 <div class="form-grid" style="margin-bottom:10px;">
-                    <div><label class="stat-label">First Name</label><input type="text" value="${member.first}" class="modern-input" onchange="updatePartyMember('${member.id}', 'first_name', this.value)" placeholder="First Name"></div>
-                    <div><label class="stat-label">Last Name</label><input type="text" value="${member.last}" class="modern-input" onchange="updatePartyMember('${member.id}', 'last_name', this.value)" placeholder="Last Name"></div>
+                    <div><label class="stat-label">First Name</label><input type="text" value="${member.first}" class="modern-input" oninput="updatePartyMember('${member.id}', 'first_name', this.value)"></div>
+                    <div><label class="stat-label">Last Name</label><input type="text" value="${member.last}" class="modern-input" oninput="updatePartyMember('${member.id}', 'last_name', this.value)"></div>
                 </div>
                 <div class="form-grid" style="margin-bottom:10px;">
-                    <div><label class="stat-label">Group / Team</label><input type="text" value="${member.team}" class="modern-input" onchange="updatePartyMember('${member.id}', 'team', this.value)" placeholder="Group / Team"></div>
-                    <div><label class="stat-label">Email</label><input type="text" value="${member.email || ''}" class="modern-input" onchange="updatePartyMember('${member.id}', 'email', this.value)" placeholder="Email"></div>
+                    <div><label class="stat-label">Group / Team</label><input type="text" value="${member.team}" class="modern-input" oninput="updatePartyMember('${member.id}', 'team', this.value)"></div>
+                    <div><label class="stat-label">Email</label><input type="text" value="${member.email || ''}" class="modern-input" oninput="updatePartyMember('${member.id}', 'email', this.value)" placeholder="New email invalidates old ticket"></div>
                 </div>
                 <div class="form-grid" style="margin-bottom:0;">
-                    <div><label class="stat-label">Phone</label><input type="text" value="${member.phone || ''}" class="modern-input" onchange="updatePartyMember('${member.id}', 'phone', this.value)" placeholder="Phone"></div>
+                    <div><label class="stat-label">Phone</label><input type="text" value="${member.phone || ''}" class="modern-input" oninput="updatePartyMember('${member.id}', 'phone', this.value)"></div>
                     <div><label class="stat-label">Shirt Size</label><select class="modern-input" onchange="updatePartyMember('${member.id}', 'shirt_size', this.value)">${sOpts}</select></div>
                 </div>
             </div>`;
@@ -580,6 +524,11 @@
         showToast("Saving...");
         const updates = [];
         for (const [id, fields] of Object.entries(pendingEdits)) {
+            // Requirement: If email is edited, set email_sent to 'No' to require a new ticket
+            const originalGuest = currentData.vips.find(v => v.id === id);
+            if (fields.email !== undefined && fields.email !== originalGuest.email) {
+                fields.email_sent = 'No';
+            }
             updates.push(_supabase.from('guests').update(fields).eq('id', id));
         }
         await Promise.all(updates);
@@ -596,7 +545,6 @@
             first_name: "New", last_name: "Guest", team: `Guest of ${hostName}`,
             event_id: currentData.activeId, status: 'Invited', email_sent: 'No'
         }]).select();
-        
         if (data && data[0]) {
             const added = data[0];
             currentParty.push({ id: added.id, first: added.first_name, last: added.last_name, team: added.team, email: '', phone: '', shirtSize: '' });
@@ -615,14 +563,12 @@
 
     function closePartyModal() { document.getElementById('partyModal').style.display = 'none'; pendingEdits = {}; }
 
-    // --- 4. TEMPLATE LOGIC ---
     function switchTemplateType(type) { currentTemplateType = type; loadTemplateToEditor(); }
     
     function loadTemplateToEditor() {
         const bodyInput = document.getElementById('emailTemplateInput');
         const subjInput = document.getElementById('emailSubjectInput');
         if (!bodyInput || !subjInput) return;
-        
         if (document.activeElement !== bodyInput && document.activeElement !== subjInput) {
             if (currentTemplateType === 'vip') { subjInput.value = currentData.vipSubj; bodyInput.value = currentData.vipBody; }
             else if (currentTemplateType === 'staff') { subjInput.value = currentData.staffSubj; bodyInput.value = currentData.staffBody; }
@@ -632,32 +578,23 @@
     }
 
     async function saveEmailTemplate() {
-        const bodyInput = document.getElementById('emailTemplateInput');
-        const subjInput = document.getElementById('emailSubjectInput');
-        if (!bodyInput || !subjInput) return;
-        
-        const body = bodyInput.value;
-        const subj = subjInput.value;
+        const body = document.getElementById('emailTemplateInput').value;
+        const subj = document.getElementById('emailSubjectInput').value;
         let updates = {};
         if (currentTemplateType === 'vip') { updates.template_body = body; updates.template_subject = subj; }
         else if (currentTemplateType === 'staff') { updates.template_staff_body = body; updates.template_staff_subject = subj; }
         else if (currentTemplateType === 'guest') { updates.template_guest_body = body; updates.template_guest_subject = subj; }
-
         await _supabase.from('events').update(updates).eq('id', currentData.activeId);
         showToast(`✅ ${currentTemplateType.toUpperCase()} Saved!`);
         refreshData(null, true);
     }
 
-    // --- 5. DYNAMIC ADD FORMS (New Registrations) ---
     function renderAddForm(type) {
         const container = document.getElementById('dynamicFormContainer');
         if (!container) return;
         let html = '';
-        let guestLimit = 0;
-        const shirtOptions = `<option value="">None</option><option value="Medium">Medium</option><option value="Large">Large</option><option value="X-Large">X-Large</option><option value="XX-Large">XX-Large</option><option value="XXX-Large">XXX-Large</option>`;
-
+        let guestLimit = (type === 'staff') ? 3 : (type === 'friends') ? 1 : (type === 'acts') ? 10 : (type === 'special') ? 5 : 0;
         if (type === 'staff') {
-            guestLimit = 3;
             html += `<div class="section-header">Staff Info</div>
             <div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">GCU Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>
             <div class="mb-3"><label class="stat-label">Department *</label><select id="mainDept" class="modern-input" required>${STAFF_DEPTS.map(d => `<option>${d}</option>`).join('')}</select></div>`;
@@ -665,19 +602,12 @@
             html += `<div class="section-header">Single Entry</div>
             <div class="form-grid"><div><label class="stat-label">First Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Last Name</label><input type="text" id="mainLastName" class="modern-input"></div></div>
             <div class="form-grid"><div><label class="stat-label">Email</label><input type="email" id="mainEmail" class="modern-input"></div><div><label class="stat-label">Group / Team</label><input type="text" id="mainGroupInput" class="modern-input" placeholder="e.g. Guest Early Access"></div></div>`;
-        } else if (type === 'friends') {
-            guestLimit = 1;
-            html += `<div class="section-header">Main Contact</div><div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
-        } else if (type === 'acts' || type === 'special') {
-            guestLimit = type === 'acts' ? 10 : 5;
+        } else {
             html += `<div class="section-header">Main Contact</div><div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
         }
-
         if (guestLimit > 0) {
             html += `<div class="section-header">Party Members (Max ${guestLimit})</div>`;
-            for(let i=1; i<=guestLimit; i++) {
-                html += `<div class="guest-card"><div class="form-grid"><div><label class="stat-label">Guest ${i} Name</label><input type="text" id="g${i}Name" class="modern-input" placeholder="Full Name"></div><div><label class="stat-label">Guest ${i} Email</label><input type="email" id="g${i}Email" class="modern-input" placeholder="Email"></div></div></div>`;
-            }
+            for(let i=1; i<=guestLimit; i++) html += `<div class="guest-card"><div class="form-grid"><div><label class="stat-label">Guest ${i} Name</label><input type="text" id="g${i}Name" class="modern-input"></div><div><label class="stat-label">Guest ${i} Email</label><input type="email" id="g${i}Email" class="modern-input"></div></div></div>`;
         }
         container.innerHTML = html;
         container.dataset.type = type;
@@ -690,13 +620,12 @@
         const container = document.getElementById('dynamicFormContainer');
         const type = container.dataset.type;
         const limit = parseInt(container.dataset.limit || 0);
-        let mainPayload = { event_id: currentData.activeId, status: 'Invited', email_sent: 'No' };
-
-        const nameParts = document.getElementById('mainName').value.trim().split(' ');
-        mainPayload.first_name = nameParts[0];
-        mainPayload.last_name = nameParts.slice(1).join(' ') || '';
-        mainPayload.email = document.getElementById('mainEmail').value;
-
+        let nameParts = document.getElementById('mainName').value.trim().split(' ');
+        let mainPayload = { 
+            event_id: currentData.activeId, status: 'Invited', email_sent: 'No', 
+            first_name: nameParts[0], last_name: nameParts.slice(1).join(' ') || '',
+            email: document.getElementById('mainEmail').value 
+        };
         if (type === 'staff') mainPayload.team = document.getElementById('mainDept').value;
         else if (type === 'friends') mainPayload.team = "Friends of CAB Early Access";
         else if (type === 'acts') mainPayload.team = "VIP Acts";
@@ -705,7 +634,6 @@
             mainPayload.last_name = document.getElementById('mainLastName').value;
             mainPayload.team = document.getElementById('mainGroupInput').value || "Single Manual Add";
         }
-
         const inserts = [_supabase.from('guests').insert([mainPayload])];
         for(let i=1; i<=limit; i++) {
             const gName = document.getElementById(`g${i}Name`)?.value.trim();
@@ -719,39 +647,20 @@
                 }]));
             }
         }
-
         await Promise.all(inserts);
         showToast("Added!");
         renderAddForm(type);
     });
 
-    // --- 6. CORE ACTIONS & ROUTING ---
     async function resend(id) {
         const guest = currentData.vips.find(v => v.id === id);
         if (!guest || !guest.email) { showToast("Invalid email"); return; }
-        
         const team = guest.team || "";
         const isStaff = STAFF_DEPTS.includes(team);
         const isPartyGuest = team.startsWith("Guest of ");
-
-        // --- NEW ROUTING LOGIC: ONLY STAFF OR PARTY GUESTS GET EMAILS ---
-        if (!isStaff && !isPartyGuest) {
-            showToast("⚠️ Main Contacts do not receive tickets.");
-            return;
-        }
-        
-        let subj = currentData.vipSubj;
-        let body = currentData.vipBody;
-
-        if (isStaff) { 
-            subj = currentData.staffSubj; 
-            body = currentData.staffBody; 
-        } else {
-            // It's a "Guest of..." individual
-            subj = currentData.guestSubj; 
-            body = currentData.guestBody; 
-        }
-
+        if (!isStaff && !isPartyGuest) { showToast("⚠️ Main Contacts do not receive tickets."); return; }
+        let subj = isStaff ? currentData.staffSubj : currentData.guestSubj;
+        let body = isStaff ? currentData.staffBody : currentData.guestBody;
         showToast(`Mailing...`);
         const params = new URLSearchParams({ action: 'sendMail', id: guest.id, first: guest.first, email: guest.email, eventName: currentData.activeEventName, subject: subj, body: body });
         await fetch(`${WEB_APP_URL}?${params.toString()}`, { mode: 'no-cors' });
@@ -764,7 +673,6 @@
         if (!guest) return;
         const newStatus = guest.status === 'Checked In' ? 'Invited' : 'Checked In';
         if (el) { el.style.background = newStatus === 'Checked In' ? 'var(--gradient-success)' : ''; el.innerText = newStatus === 'Checked In' ? '✓' : 'MARK'; }
-        
         await _supabase.from('guests').update({ status: newStatus }).eq('id', id);
         if (newStatus === 'Checked In') {
             document.getElementById('alertGuestName').innerText = `${guest.first} ${guest.last}`;
@@ -775,7 +683,6 @@
         }
     }
 
-    // --- UTILITIES ---
     function toggleView(v) {
         document.querySelectorAll('.view').forEach(e => e.style.display = 'none');
         document.querySelectorAll('.control-item').forEach(e => e.classList.remove('active'));
@@ -802,53 +709,31 @@
         });
     }
 
-    function insertTag(t) { 
-        const input = document.getElementById('emailTemplateInput');
-        if (input) { input.value += t; updatePreview(); }
-    }
-
+    function insertTag(t) { const input = document.getElementById('emailTemplateInput'); if (input) { input.value += t; updatePreview(); } }
     function resetTemplate() { 
         const type = currentTemplateType;
-        if (DEFAULTS[type]) {
-            document.getElementById('emailTemplateInput').value = DEFAULTS[type].body;
-            document.getElementById('emailSubjectInput').value = DEFAULTS[type].subj;
-            updatePreview();
-        }
+        if (DEFAULTS[type]) { document.getElementById('emailTemplateInput').value = DEFAULTS[type].body; document.getElementById('emailSubjectInput').value = DEFAULTS[type].subj; updatePreview(); }
     }
 
     async function createNewEvent() { 
-        const nameInput = document.getElementById('newEventName');
-        const name = nameInput ? nameInput.value : '';
+        const name = document.getElementById('newEventName').value;
         if(name) { 
-            const { data } = await _supabase.from('events').insert([{ 
-                name, template_body: DEFAULTS.vip.body, template_subject: DEFAULTS.vip.subj 
-            }]).select(); 
+            const { data } = await _supabase.from('events').insert([{ name, template_body: DEFAULTS.vip.body, template_subject: DEFAULTS.vip.subj }]).select(); 
             if(data && data[0]) refreshData(data[0].id); 
             showToast("Created!"); 
         } 
     }
 
     async function removeGuest(id) { if(confirm("Delete?")) { await _supabase.from('guests').delete().eq('id', id); showToast("Deleted"); } }
-    
     async function sendBulk() { 
         if(confirm("Send to all eligible unsent?")) { 
-            const unsent = currentData.vips.filter(v => {
-                const isStaff = STAFF_DEPTS.includes(v.team);
-                const isPartyGuest = v.team.startsWith("Guest of ");
-                return (isStaff || isPartyGuest) && v.sent !== 'Yes' && v.email;
-            });
-            
-            if (unsent.length === 0) {
-                showToast("No eligible unsent guests found.");
-                return;
-            }
-            
+            const unsent = currentData.vips.filter(v => (STAFF_DEPTS.includes(v.team) || v.team.startsWith("Guest of ")) && v.sent !== 'Yes' && v.email);
+            if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
             showToast(`Processing ${unsent.length} emails...`);
             for(const g of unsent) await resend(g.id); 
             showToast("Done!"); 
         } 
     }
-    
     async function switchEvent(id) { await refreshData(id); }
 
     document.getElementById('hardwareInput').addEventListener('keydown', function(e) {
