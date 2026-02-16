@@ -48,6 +48,32 @@
                 radial-gradient(circle at 95% 95%, rgba(191, 90, 242, 0.12) 0%, transparent 45%);
         }
 
+        /* LOGIN SCREEN STYLES */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .login-card {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: var(--radius-card);
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .mb-3 { margin-bottom: 1rem; }
         .mb-4 { margin-bottom: 1.5rem; }
         .mt-2 { margin-top: 0.5rem; }
@@ -63,7 +89,7 @@
             max-width: 1440px;
             margin: 0 auto;
             padding: 0 40px;
-            display: flex;
+            display: none; /* Hidden until login */
             flex-direction: column;
         }
 
@@ -232,6 +258,22 @@
 <div id="loader"><div class="spinner"></div><span>SYNCING</span></div>
 <div id="toast">Notification</div>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+    <div class="frosted login-card">
+        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB" style="height: 60px; margin-bottom: 20px;">
+        <h2 style="margin-bottom: 10px; font-weight: 800;">ADMIN ACCESS</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">Please enter your credentials to manage the VIP check-in system.</p>
+        
+        <div class="mb-4">
+            <input type="password" id="login-password" class="modern-input" placeholder="Enter System Password" style="text-align: center; letter-spacing: 0.2em;">
+            <p id="login-error" style="color: #FF3B30; font-size: 0.8rem; margin-top: 10px; font-weight: 600; display: none;">Invalid Password</p>
+        </div>
+        
+        <button onclick="handleLogin()" class="btn-action" style="width: 100%; padding: 15px; font-size: 1rem;">LOG IN</button>
+    </div>
+</div>
+
 <!-- CHECK IN ALERT MODAL -->
 <div id="shirtAlert" class="modal-overlay" style="z-index:20002; background:rgba(0,0,0,0.95);" onclick="closeShirtAlert()">
     <div class="modal-content" style="text-align:center; border: 2px solid #34C759; max-width:400px;">
@@ -264,7 +306,7 @@
     </div>
 </div>
 
-<div class="app-container">
+<div class="app-container" id="main-app">
     <div class="frosted topbar">
         <div class="brand">
             <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB VIP System" class="brand-logo">
@@ -401,6 +443,37 @@
         staff: { subj: "🎤 GCU's Got Talent Staff Early Access – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up as Staff for Early Access! 🎉🎉🎉\n\n**This email contains your Staff Access ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" },
         guest: { subj: "🎤 GCU's Got Talent Early Access Details – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up for Early Access to GCU's Got Talent! 🎉🎉🎉\n\n**This email is your entry ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" }
     };
+
+    // LOGIN LOGIC
+    const SYSTEM_PASSWORD = "cabgcu49!";
+
+    function handleLogin() {
+        const input = document.getElementById('login-password');
+        const error = document.getElementById('login-error');
+        
+        if (input.value === SYSTEM_PASSWORD) {
+            sessionStorage.setItem('cab_vip_auth', 'true');
+            unlockApp();
+        } else {
+            error.style.display = 'block';
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    function unlockApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        // Initialize App Data
+        refreshData();
+        setupRealtime();
+        renderAddForm('staff');
+    }
+
+    // Add enter key listener for login
+    document.getElementById('login-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
 
     function updatePreview() {
         const input = document.getElementById('emailTemplateInput');
@@ -771,7 +844,12 @@
         if (e.key === 'Enter') { checkIn(this.value.trim().split('id=')[1]?.split('&')[0] || this.value.trim(), true); this.value = ''; }
     });
 
-    window.onload = () => { refreshData(); setupRealtime(); renderAddForm('staff'); };
+    window.onload = () => { 
+        // Check if user is already authenticated in this session
+        if (sessionStorage.getItem('cab_vip_auth') === 'true') {
+            unlockApp();
+        }
+    };
 </script>
 </body>
 </html>
