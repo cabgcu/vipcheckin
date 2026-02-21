@@ -222,7 +222,9 @@
         .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .tag-chip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; margin-bottom: 5px; }
         .tag-chip.bold-btn { border-color: #0A84FF; font-weight: 800; color: #0A84FF; }
-        #emailPreview { background: #f4f4f4; color: #000; border-radius: 12px; padding: 0; height: 400px; overflow-y: auto; border: 1px solid #ccc; font-family: sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
+        
+        /* Updated iframe styling for full email preview */
+        #emailPreview { background: #f4f4f4; border-radius: 12px; height: 500px; width: 100%; border: 1px solid #ccc; display: block; }
 
         .modal-overlay { 
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
@@ -426,8 +428,8 @@
                         </div>
                     </div>
                     <div>
-                        <label class="stat-label" style="color:#aaa;">Email Preview</label>
-                        <div id="emailPreview"></div>
+                        <label class="stat-label" style="color:#aaa;">Full Email Preview</label>
+                        <iframe id="emailPreview"></iframe>
                     </div>
                 </div>
             </div>
@@ -523,14 +525,87 @@
 
     function updatePreview() {
         const input = document.getElementById('emailTemplateInput');
-        const preview = document.getElementById('emailPreview');
-        if (!input || !preview) return;
+        const previewIframe = document.getElementById('emailPreview');
+        if (!input || !previewIframe) return;
         
-        let content = input.value
+        let text = input.value
+            .replace(/\{\{FIRST\}\}/g, 'Alex')
+            .replace(/\{\{EVENT\}\}/g, currentData.activeEventName || 'Your Event')
+            .replace(/\{\{GROUP\}\}/g, 'VIP Team')
             .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
             .replace(/\n/g, '<br>');
             
-        preview.innerHTML = `<div style="background:#fff; color:#000; padding:20px; border-radius:12px; height: 100%; overflow-y: auto;">${content}</div>`;
+        const bannerUrl = "https://drive.google.com/thumbnail?id=1OThOxHC0X9tyowtnQCp2P6qAX9kI91m1&sz=w800";
+        const barcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PREVIEW123456&format=png";
+        
+        const fullHtml = `
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <style type="text/css">
+                body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
+                table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+                img { -ms-interpolation-mode: bicubic; }
+            </style>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Helvetica, Arial, sans-serif;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f3f4f6;">
+                <tr>
+                    <td align="center" style="padding: 20px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                            <tr>
+                                <td align="center" style="padding: 0;">
+                                    <img src="${bannerUrl}" alt="Event Banner" width="500" style="display: block; width: 100%; max-width: 100%; height: auto; border: 0;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align="center" style="background-color: #ffffff; padding: 40px 24px 10px 24px;">
+                                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #000000; text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;">GGT Event Info & Ticket</h1>
+                                    <p style="margin: 12px 0 0 0; font-size: 11px; font-weight: 700; color: #ffffff; background-color: #000000; display: inline-block; padding: 4px 12px; text-transform: uppercase; letter-spacing: 2px; font-family: sans-serif; border-radius: 4px;">Official Access Pass</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 20px 30px 40px 30px; background-color: #ffffff; font-size: 16px; color: #000000; line-height: 1.6; font-family: sans-serif;">
+                                    <div style="color: #000000;">
+                                        ${text}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0 15px; background-color: #ffffff;">
+                                    <div style="border-top: 2px dashed #e5e7eb; width: 100%; height: 1px;"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align="center" style="padding: 40px 30px; background-color: #ffffff;">
+                                    <table border="0" cellspacing="0" cellpadding="0" width="100%">
+                                        <tr>
+                                            <td align="center" style="background: #ffffff; padding: 25px; border-radius: 16px; border: 2px solid #eeeeee;">
+                                                <img src="${barcodeUrl}" alt="Ticket QR Code" width="250" height="250" style="display: block; border: 0; max-width: 100%; height: auto;">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin: 25px 0 0 0; font-size: 14px; color: #1a1a1a; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; font-family: sans-serif;">SCAN AT CHECK-IN</p>
+                                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #888888; font-family: monospace;">ID: #PREVIEW1</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align="center" style="background-color: #ffffff; padding: 30px 20px; border-top: 1px solid #f0f0f0;">
+                                    <p style="margin: 0; font-size: 11px; font-weight: 700; color: #bbbbbb; text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;">
+                                        &copy; 2026 Canyon Activities Board
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>`;
+        
+        previewIframe.srcdoc = fullHtml;
     }
 
     async function setupRealtime() {
