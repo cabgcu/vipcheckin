@@ -223,7 +223,6 @@
         .tag-chip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; margin-bottom: 5px; }
         .tag-chip.bold-btn { border-color: #0A84FF; font-weight: 800; color: #0A84FF; }
         
-        /* Updated iframe styling for full email preview */
         #emailPreview { background: #f4f4f4; border-radius: 12px; height: 500px; width: 100%; border: 1px solid #ccc; display: block; }
 
         .modal-overlay { 
@@ -402,6 +401,18 @@
                     <button onclick="createNewEvent()" class="btn-action">Create</button>
                 </div>
             </div>
+            
+            <div style="margin-bottom:30px; padding: 20px; border: 1px solid rgba(255, 59, 48, 0.3); border-radius: 16px; background: rgba(255, 59, 48, 0.05);">
+                <label class="stat-label" style="color: #FF3B30;">Danger Zone</label>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="display:block; margin-bottom: 5px;">Delete Current Event</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">This will permanently remove the active event and all its guests.</span>
+                    </div>
+                    <button onclick="deleteCurrentEvent()" class="btn-action" style="background: var(--gradient-danger);">Delete Event</button>
+                </div>
+            </div>
+            
             <hr style="border:0; border-top:1px solid var(--glass-border); margin:30px 0;">
             <div style="margin-bottom:30px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -412,6 +423,18 @@
                         <option value="guest">Guest Email</option>
                     </select>
                 </div>
+                
+                <div class="form-grid" style="margin-bottom: 20px; gap: 16px;">
+                    <div>
+                        <label class="stat-label">Banner Image URL</label>
+                        <input type="text" id="bannerUrlInput" class="modern-input" placeholder="Leave blank for no image..." oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label class="stat-label">Ticket Heading</label>
+                        <input type="text" id="headingTextInput" class="modern-input" placeholder="e.g. Event Info & Ticket" oninput="updatePreview()">
+                    </div>
+                </div>
+
                 <input type="text" id="emailSubjectInput" class="modern-input" placeholder="Subject Line" style="margin-bottom:12px; font-weight:bold;">
                 <div class="editor-grid">
                     <div>
@@ -440,7 +463,9 @@
 <script>
     const SUPABASE_URL = 'https://raraxpjsftqxhwkpwpab.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_p4FqN3nJTT5GFNU_xqZtYg_7fPtkKhS';
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzNAFKUROxH2wPv_pgDSD4uw0fWOoqT-SjP0eOERZ9cZNW1SuHZejBh27Wc0BZtkydkbw/exec";
+    
+    // Updated to the newest GAS URL
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw7l4hjYt5FEJcXFtYNo-qE75DuDEp6VbBhHc7jH9GVDDjfMVHy4MC7cDCl4XcRpQpvMw/exec";
 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
@@ -535,8 +560,17 @@
             .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
             .replace(/\n/g, '<br>');
             
-        const bannerUrl = "https://drive.google.com/thumbnail?id=1OThOxHC0X9tyowtnQCp2P6qAX9kI91m1&sz=w800";
+        const bannerUrl = document.getElementById('bannerUrlInput')?.value || "";
+        const headingText = document.getElementById('headingTextInput')?.value || "Event Info & Ticket";
         const barcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PREVIEW123456&format=png";
+        
+        const bannerHtml = bannerUrl.trim() !== "" ? `
+            <tr>
+                <td align="center" style="padding: 0;">
+                    <img src="${bannerUrl}" alt="Event Banner" width="500" style="display: block; width: 100%; max-width: 100%; height: auto; border: 0;">
+                </td>
+            </tr>
+        ` : "";
         
         const fullHtml = `
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -555,14 +589,10 @@
                 <tr>
                     <td align="center" style="padding: 20px;">
                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                            <tr>
-                                <td align="center" style="padding: 0;">
-                                    <img src="${bannerUrl}" alt="Event Banner" width="500" style="display: block; width: 100%; max-width: 100%; height: auto; border: 0;">
-                                </td>
-                            </tr>
+                            ${bannerHtml}
                             <tr>
                                 <td align="center" style="background-color: #ffffff; padding: 40px 24px 10px 24px;">
-                                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #000000; text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;">GGT Event Info & Ticket</h1>
+                                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #000000; text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif;">${headingText}</h1>
                                     <p style="margin: 12px 0 0 0; font-size: 11px; font-weight: 700; color: #ffffff; background-color: #000000; display: inline-block; padding: 4px 12px; text-transform: uppercase; letter-spacing: 2px; font-family: sans-serif; border-radius: 4px;">Official Access Pass</p>
                                 </td>
                             </tr>
@@ -638,6 +668,8 @@
             allEvents: eventsData,
             activeId: activeId,
             activeEventName: activeEvent?.name || "No Event",
+            bannerUrl: activeEvent?.banner_url === null ? "" : activeEvent?.banner_url,
+            headingText: activeEvent?.heading_text || "Event Info & Ticket",
             vipSubj: activeEvent?.template_subject || DEFAULTS.vip.subj,
             vipBody: activeEvent?.template_body || DEFAULTS.vip.body,
             staffSubj: activeEvent?.template_staff_subject || DEFAULTS.staff.subj,
@@ -781,8 +813,15 @@
     function loadTemplateToEditor() {
         const bodyInput = document.getElementById('emailTemplateInput');
         const subjInput = document.getElementById('emailSubjectInput');
+        const bannerInput = document.getElementById('bannerUrlInput');
+        const headingInput = document.getElementById('headingTextInput');
+
         if (!bodyInput || !subjInput) return;
-        if (document.activeElement !== bodyInput && document.activeElement !== subjInput) {
+
+        if (document.activeElement !== bodyInput && document.activeElement !== subjInput && document.activeElement !== bannerInput && document.activeElement !== headingInput) {
+            bannerInput.value = currentData.bannerUrl || "";
+            headingInput.value = currentData.headingText || "";
+
             if (currentTemplateType === 'vip') { subjInput.value = currentData.vipSubj; bodyInput.value = currentData.vipBody; }
             else if (currentTemplateType === 'staff') { subjInput.value = currentData.staffSubj; bodyInput.value = currentData.staffBody; }
             else if (currentTemplateType === 'guest') { subjInput.value = currentData.guestSubj; bodyInput.value = currentData.guestBody; }
@@ -793,10 +832,18 @@
     async function saveEmailTemplate() {
         const body = document.getElementById('emailTemplateInput').value;
         const subj = document.getElementById('emailSubjectInput').value;
-        let updates = {};
+        const banner = document.getElementById('bannerUrlInput').value;
+        const heading = document.getElementById('headingTextInput').value;
+
+        let updates = {
+            banner_url: banner,
+            heading_text: heading
+        };
+        
         if (currentTemplateType === 'vip') { updates.template_body = body; updates.template_subject = subj; }
         else if (currentTemplateType === 'staff') { updates.template_staff_body = body; updates.template_staff_subject = subj; }
         else if (currentTemplateType === 'guest') { updates.template_guest_body = body; updates.template_guest_subject = subj; }
+        
         await _supabase.from('events').update(updates).eq('id', currentData.activeId);
         showToast(`✅ ${currentTemplateType.toUpperCase()} Saved!`);
         refreshData(null, true);
@@ -915,6 +962,11 @@
                    .replace(/\{\{EVENT\}\}/g, currentData.activeEventName || '')
                    .replace(/\{\{GROUP\}\}/g, cleanTeamName(guest.team) || '');
 
+        // Pass a transparent pixel if the banner URL was explicitly cleared
+        const finalBannerUrl = (!currentData.bannerUrl || currentData.bannerUrl.trim() === "") 
+            ? "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+            : currentData.bannerUrl;
+
         const params = new URLSearchParams({ 
             action: 'sendMail', 
             id: guest.id, 
@@ -922,7 +974,9 @@
             email: guest.email, 
             eventName: currentData.activeEventName, 
             subject: subj, 
-            body: body 
+            body: body,
+            bannerUrl: finalBannerUrl,
+            headingText: currentData.headingText || "Event Info & Ticket"
         });
         
         try {
@@ -930,8 +984,12 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
             
-            await fetch(`${WEB_APP_URL}?${params.toString()}`, { 
+            // Send as POST
+            await fetch(WEB_APP_URL, { 
+                method: 'POST',
                 mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -1093,10 +1151,34 @@
     async function createNewEvent() { 
         const name = document.getElementById('newEventName').value;
         if(name) { 
-            const { data } = await _supabase.from('events').insert([{ name, template_body: DEFAULTS.vip.body, template_subject: DEFAULTS.vip.subj }]).select(); 
-            if(data && data[0]) refreshData(data[0].id); 
-            showToast("Created!"); 
+            const { data } = await _supabase.from('events').insert([{ 
+                name: name, 
+                template_body: DEFAULTS.vip.body, 
+                template_subject: DEFAULTS.vip.subj,
+                banner_url: "", // Default to no header for new events
+                heading_text: "Event Info & Ticket"
+            }]).select(); 
+            if(data && data[0]) {
+                document.getElementById('newEventName').value = ""; // Clear input
+                refreshData(data[0].id); 
+                showToast("Created!"); 
+            }
         } 
+    }
+
+    async function deleteCurrentEvent() {
+        if (currentData.allEvents.length <= 1) {
+            alert("You cannot delete the only remaining event. Create a new one first.");
+            return;
+        }
+        const eventName = currentData.activeEventName;
+        if (confirm(`⚠️ WARNING ⚠️\n\nAre you sure you want to completely delete "${eventName}"?\n\nThis will erase all guests, groups, and settings for this event. THIS CANNOT BE UNDONE.`)) {
+            showToast("Deleting event...");
+            await _supabase.from('events').delete().eq('id', currentData.activeId);
+            localStorage.removeItem('activeEventId');
+            showToast("Event Deleted!");
+            refreshData(null); // Passing null loads the first available event
+        }
     }
 
     async function removeGuest(id) { if(confirm("Delete?")) { await _supabase.from('guests').delete().eq('id', id); showToast("Deleted"); } }
