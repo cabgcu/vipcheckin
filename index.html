@@ -56,7 +56,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Match background container exactly */
             background-color: #050505;
             background-image: 
                 radial-gradient(circle at 5% 5%, rgba(10, 132, 255, 0.12) 0%, transparent 45%),
@@ -95,7 +94,7 @@
             max-width: 1440px;
             margin: 0 auto;
             padding: 0 40px;
-            display: none; /* Hidden until login */
+            display: none;
             flex-direction: column;
         }
 
@@ -278,7 +277,7 @@
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">Please enter your credentials to manage the VIP check-in system.</p>
         
         <div class="mb-4">
-            <input type="password" id="login-password" class="modern-input" placeholder="Enter System Password" style="text-align: center; letter-spacing: 0.2em;">
+            <input type="password" id="login-password" class="modern-input" placeholder="Enter System Password" style="text-align: center; font-family: inherit;">
             <p id="login-error" style="color: #FF3B30; font-size: 0.8rem; margin-top: 10px; font-weight: 600; display: none;">Invalid Password</p>
         </div>
         
@@ -345,7 +344,7 @@
     <div id="view-list" class="view">
         <div style="display:flex; gap:12px; margin-bottom: 30px;">
             <input type="text" id="search" class="modern-input" placeholder="Search name or group..." onkeyup="filterTable()" style="flex:1;">
-            <button onclick="sendBulk()" id="blastBtn" class="btn-action">Email Tickets (Eligible)</button>
+            <button onclick="sendBulk()" id="blastBtn" class="btn-action">Email ALL Tickets</button>
         </div>
         <div class="table-container">
             <table>
@@ -452,9 +451,9 @@
     const STAFF_DEPTS = ["Campus Health", "Campus Recreation", "Club Sports", "Community Standards", "Housing Operations", "Residence Life", "Spiritual Life", "Student Care", "Student Engagement", "Welcome Programs", "Other", "Staff Early Access"];
 
     const DEFAULTS = {
-        vip: { subj: "🎤 GCU's Got Talent VIP Details – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you’re signed up as a VIP for GCU's Got Talent on March 4th! 🎉🎉🎉\n\n**This email serves as your official ticket for entry.**\n\nCheck-in Time: 5:45–6:30 PM.\nLocation: Near the Colangelo Museum.\n\nThank you for helping make GCU's Got Talent such an exciting event!\n– CAB Special Events Team" },
-        staff: { subj: "🎤 GCU's Got Talent Staff Early Access – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up as Staff for Early Access! 🎉🎉🎉\n\n**This email contains your Staff Access ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" },
-        guest: { subj: "🎤 GCU's Got Talent Early Access Details – March 4th!", body: "Hello Everyone!\n\nIf you’re receiving this email, it’s because you signed up for Early Access to GCU's Got Talent! 🎉🎉🎉\n\n**This email is your entry ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" }
+        vip: { subj: "🎤 GCU's Got Talent VIP Details – March 4th!", body: "Hello {{FIRST}}!\n\nIf you’re receiving this email, it’s because you’re signed up as a VIP for {{EVENT}}! 🎉🎉🎉\n\n**This email serves as your official ticket for entry.**\n\nCheck-in Time: 5:45–6:30 PM.\nLocation: Near the Colangelo Museum.\n\nThank you for helping make the event so exciting!\n– CAB Special Events Team" },
+        staff: { subj: "🎤 GCU's Got Talent Staff Early Access – March 4th!", body: "Hello {{FIRST}}!\n\nIf you’re receiving this email, it’s because you signed up as Staff for Early Access! 🎉🎉🎉\n\n**This email contains your Staff Access ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" },
+        guest: { subj: "🎤 GCU's Got Talent Early Access Details – March 4th!", body: "Hello {{FIRST}}!\n\nIf you’re receiving this email, it’s because you signed up for Early Access to {{EVENT}}! 🎉🎉🎉\n\n**This email is your entry ticket.**\n\nCheck-In Time: 6:30–7:30 PM.\nLocation: Near Havoc House.\n\n– CAB Special Events Team" }
     };
 
     // LOGIN LOGIC
@@ -488,7 +487,6 @@
 
     // GLOBAL KEYDOWN LISTENER
     window.addEventListener('keydown', (e) => {
-        // If shirtAlert is visible, dismiss it on ESC or ENTER (for fast checking)
         const shirtAlert = document.getElementById('shirtAlert');
         if (shirtAlert && shirtAlert.style.display === 'flex') {
             if (e.key === 'Escape' || e.key === 'Enter') {
@@ -496,6 +494,31 @@
             }
         }
     });
+
+    // UTILS
+    function cleanTeamName(team) {
+        if (!team) return "";
+        return team.replace(/\[(VIP|Staff|Guest)\]/gi, '').trim();
+    }
+
+    function getTemplateType(teamStr) {
+        if (!teamStr) return 'guest'; // default
+        if (teamStr.includes("[VIP]") || teamStr === "VIP Acts" || teamStr === "Special Events") return 'vip';
+        if (teamStr.includes("[Staff]") || STAFF_DEPTS.includes(teamStr) || teamStr === "Staff Early Access") return 'staff';
+        if (teamStr.includes("[Guest]") || teamStr === "Friends of CAB Early Access") return 'guest';
+        return 'guest'; // fallback
+    }
+
+    function getTemplateTypeForGuest(guest) {
+        let teamStr = guest.team || "";
+        if (teamStr.startsWith("Guest of ")) {
+            let hostName = teamStr.replace("Guest of ", "").trim();
+            // Trace host's true team
+            let host = currentData.vips.find(v => (v.first + " " + v.last).trim() === hostName && !v.team.startsWith("Guest of "));
+            if (host) teamStr = host.team || "";
+        }
+        return getTemplateType(teamStr);
+    }
 
     function updatePreview() {
         const input = document.getElementById('emailTemplateInput');
@@ -562,7 +585,7 @@
             tableBody.innerHTML = currentData.vips.map(v => `
                 <tr>
                     <td class="fw-bold">${v.first}</td><td class="fw-bold">${v.last}</td>
-                    <td><span class="group-tag">${v.team}</span></td><td><small>${v.phone || ''}</small></td>
+                    <td><span class="group-tag">${cleanTeamName(v.team)}</span></td><td><small>${v.phone || ''}</small></td>
                     <td><small>${v.email || ''}</small></td>
                     <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize || '-'}</span></td>
                     <td><button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button></td>
@@ -693,6 +716,7 @@
         if (!container) return;
         let html = '';
         let guestLimit = (type === 'staff') ? 3 : (type === 'friends') ? 1 : (type === 'acts') ? 10 : (type === 'special') ? 5 : 0;
+        
         if (type === 'staff') {
             html += `<div class="section-header">Staff Info</div>
             <div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">GCU Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>
@@ -700,14 +724,22 @@
         } else if (type === 'single') {
             html += `<div class="section-header">Single Entry</div>
             <div class="form-grid"><div><label class="stat-label">First Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Last Name</label><input type="text" id="mainLastName" class="modern-input"></div></div>
-            <div class="form-grid"><div><label class="stat-label">Email</label><input type="email" id="mainEmail" class="modern-input"></div><div><label class="stat-label">Group / Team</label><input type="text" id="mainGroupInput" class="modern-input" placeholder="e.g. Guest Early Access"></div></div>`;
+            <div class="form-grid"><div><label class="stat-label">Email</label><input type="email" id="mainEmail" class="modern-input"></div><div><label class="stat-label">Group / Team</label><input type="text" id="mainGroupInput" class="modern-input" placeholder="e.g. Guest Early Access"></div></div>
+            <div class="mb-3"><label class="stat-label">Email Template To Send *</label>
+            <select id="singleEmailTemplate" class="modern-input" required>
+                <option value="[VIP]">VIP Email</option>
+                <option value="[Staff]">Staff Email</option>
+                <option value="[Guest]">Guest Email</option>
+            </select></div>`;
         } else {
             html += `<div class="section-header">Main Contact</div><div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
         }
+        
         if (guestLimit > 0) {
             html += `<div class="section-header">Party Members (Max ${guestLimit})</div>`;
             for(let i=1; i<=guestLimit; i++) html += `<div class="guest-card"><div class="form-grid"><div><label class="stat-label">Guest ${i} Name</label><input type="text" id="g${i}Name" class="modern-input"></div><div><label class="stat-label">Guest ${i} Email</label><input type="email" id="g${i}Email" class="modern-input"></div></div></div>`;
         }
+        
         container.innerHTML = html;
         container.dataset.type = type;
         container.dataset.limit = guestLimit;
@@ -720,19 +752,24 @@
         const type = container.dataset.type;
         const limit = parseInt(container.dataset.limit || 0);
         let nameParts = document.getElementById('mainName').value.trim().split(' ');
+        
         let mainPayload = { 
             event_id: currentData.activeId, status: 'Invited', email_sent: 'No', 
             first_name: nameParts[0], last_name: nameParts.slice(1).join(' ') || '',
             email: document.getElementById('mainEmail').value 
         };
+        
         if (type === 'staff') mainPayload.team = document.getElementById('mainDept').value;
         else if (type === 'friends') mainPayload.team = "Friends of CAB Early Access";
         else if (type === 'acts') mainPayload.team = "VIP Acts";
         else if (type === 'special') mainPayload.team = "Special Events";
         else if (type === 'single') {
             mainPayload.last_name = document.getElementById('mainLastName').value;
-            mainPayload.team = document.getElementById('mainGroupInput').value || "Single Manual Add";
+            let baseTeam = document.getElementById('mainGroupInput').value || "Single Manual Add";
+            let tplChoice = document.getElementById('singleEmailTemplate').value;
+            mainPayload.team = `${baseTeam} ${tplChoice}`.trim();
         }
+        
         const inserts = [_supabase.from('guests').insert([mainPayload])];
         for(let i=1; i<=limit; i++) {
             const gName = document.getElementById(`g${i}Name`)?.value.trim();
@@ -751,20 +788,31 @@
         renderAddForm(type);
     });
 
-    async function resend(id) {
-        const guest = currentData.vips.find(v => v.id === id);
-        if (!guest || !guest.email) { showToast("Invalid email"); return; }
-        const team = guest.team || "";
-        const isStaff = STAFF_DEPTS.includes(team);
-        const isPartyGuest = team.startsWith("Guest of ");
-        if (!isStaff && !isPartyGuest) { showToast("⚠️ Main Contacts do not receive tickets."); return; }
-        
-        let subj = isStaff ? currentData.staffSubj : currentData.guestSubj;
-        let body = isStaff ? currentData.staffBody : currentData.guestBody;
-        
-        body = body.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    async function sendSingleEmail(guest) {
+        if (!guest || !guest.email) return false;
 
-        showToast(`Emailing...`);
+        let tType = getTemplateTypeForGuest(guest);
+        let subj = '', body = '';
+
+        if (tType === 'staff') {
+            subj = currentData.staffSubj; body = currentData.staffBody;
+        } else if (tType === 'vip') {
+            subj = currentData.vipSubj; body = currentData.vipBody;
+        } else {
+            subj = currentData.guestSubj; body = currentData.guestBody;
+        }
+
+        // Parse placeholders in Body & Subject
+        body = body.replace(/\{\{FIRST\}\}/g, guest.first || '')
+                   .replace(/\{\{EVENT\}\}/g, currentData.activeEventName || '')
+                   .replace(/\{\{GROUP\}\}/g, cleanTeamName(guest.team) || '')
+                   .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                   .replace(/\n/g, '<br>');
+
+        subj = subj.replace(/\{\{FIRST\}\}/g, guest.first || '')
+                   .replace(/\{\{EVENT\}\}/g, currentData.activeEventName || '')
+                   .replace(/\{\{GROUP\}\}/g, cleanTeamName(guest.team) || '');
+
         const params = new URLSearchParams({ 
             action: 'sendMail', 
             id: guest.id, 
@@ -776,12 +824,36 @@
         });
         
         await fetch(`${WEB_APP_URL}?${params.toString()}`, { mode: 'no-cors' });
-        await _supabase.from('guests').update({ email_sent: 'Yes' }).eq('id', id);
+        await _supabase.from('guests').update({ email_sent: 'Yes' }).eq('id', guest.id);
+        return true;
+    }
+
+    async function resend(id) {
+        const guest = currentData.vips.find(v => v.id === id);
+        if (!guest || !guest.email) { showToast("Invalid email"); return; }
+        
+        showToast(`Emailing...`);
+        await sendSingleEmail(guest);
         showToast("Sent!");
+        refreshData(null, true);
+    }
+
+    async function sendBulk() { 
+        if(confirm("Email all eligible unsent tickets?")) { 
+            // Gets EVERYONE who has an email address and hasn't been sent an email yet
+            const unsent = currentData.vips.filter(v => v.sent !== 'Yes' && v.email);
+            if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
+            
+            showToast(`Processing ${unsent.length} emails...`);
+            for(const g of unsent) {
+                await sendSingleEmail(g);
+            } 
+            showToast("Done!"); 
+            refreshData(null, true); 
+        } 
     }
 
     async function checkIn(id, isScan = false, el = null) {
-        // If an alert is already up, immediately dismiss it so the new one can take focus
         const existingAlert = document.getElementById('shirtAlert');
         if (existingAlert && existingAlert.style.display === 'flex') {
             closeShirtAlert();
@@ -796,11 +868,10 @@
         
         if (newStatus === 'Checked In') {
             document.getElementById('alertGuestName').innerText = `${guest.first} ${guest.last}`;
-            document.getElementById('alertGuestGroup').innerText = guest.team;
+            document.getElementById('alertGuestGroup').innerText = cleanTeamName(guest.team);
             document.getElementById('alertShirtSize').innerText = guest.shirtSize || 'N/A';
             document.getElementById('shirtDisplaySection').style.display = guest.shirtSize ? 'block' : 'none';
             
-            // Show alert screen
             const shirtAlert = document.getElementById('shirtAlert');
             shirtAlert.style.display = 'flex';
             shirtAlert.style.opacity = '0';
@@ -849,7 +920,7 @@
         currentData.vips.filter(v => (v.first + ' ' + v.last).toUpperCase().includes(val)).forEach(v => {
             const d = document.createElement('div');
             d.className = "manual-result-item";
-            d.innerHTML = `<div><strong>${v.first} ${v.last}</strong><br><small>${v.team}</small></div><button class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}" onclick="checkIn('${v.id}', false, this)">${v.status === 'Checked In' ? '✓' : 'MARK'}</button>`;
+            d.innerHTML = `<div><strong>${v.first} ${v.last}</strong><br><small>${cleanTeamName(v.team)}</small></div><button class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}" onclick="checkIn('${v.id}', false, this)">${v.status === 'Checked In' ? '✓' : 'MARK'}</button>`;
             res.appendChild(d);
         });
     }
@@ -883,15 +954,6 @@
 
     async function removeGuest(id) { if(confirm("Delete?")) { await _supabase.from('guests').delete().eq('id', id); showToast("Deleted"); } }
     
-    async function sendBulk() { 
-        if(confirm("Email all eligible unsent tickets?")) { 
-            const unsent = currentData.vips.filter(v => (STAFF_DEPTS.includes(v.team) || v.team.startsWith("Guest of ")) && v.sent !== 'Yes' && v.email);
-            if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
-            showToast(`Processing ${unsent.length} emails...`);
-            for(const g of unsent) await resend(g.id); 
-            showToast("Done!"); 
-        } 
-    }
     async function switchEvent(id) { await refreshData(id); }
 
     document.getElementById('hardwareInput').addEventListener('keydown', function(e) {
