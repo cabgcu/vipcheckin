@@ -171,6 +171,7 @@
         .status-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
         .status-badge.sent { color: #34C759; background: rgba(52, 199, 89, 0.1); }
         .status-badge.draft { color: #FF9F0A; background: rgba(255, 159, 10, 0.1); }
+        .status-badge.na { color: #a1a1aa; background: rgba(255, 255, 255, 0.1); }
 
         .btn-icon { background: transparent; border: none; cursor: pointer; font-size: 1.1rem; padding: 4px; opacity: 0.7; transition: 0.2s; color: white; }
         .btn-action { 
@@ -376,7 +377,7 @@
             <label class="stat-label">Registration Type</label>
             <select id="formTypeSelector" class="modern-input" style="margin-bottom:25px;" onchange="renderAddForm(this.value)">
                 <option value="staff">Staff Early Access (Max 3 Guests)</option>
-                <option value="friends">Friends of CAB Early Access (Max 1 Guest)</option>
+                <option value="friends">Friends of CAB Early Access (Single Guest)</option>
                 <option value="acts">VIP Acts (Max 10 Guests)</option>
                 <option value="special">VIP Special Events (Max 5 Guests)</option>
                 <option value="single">Single / Manual Add (Flexible)</option>
@@ -582,15 +583,26 @@
         document.getElementById('countLeft').innerText = currentData.vips.length - checkedIn;
         const tableBody = document.getElementById('guestTableBody');
         if (tableBody) {
-            tableBody.innerHTML = currentData.vips.map(v => `
+            tableBody.innerHTML = currentData.vips.map(v => {
+                let checkInCell = v.sent === 'N/A' 
+                    ? `<span style="color:var(--text-muted); font-size:0.75rem; font-weight:800; letter-spacing:0.1em;">LABEL ONLY</span>` 
+                    : `<button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button>`;
+                
+                return `
                 <tr>
                     <td class="fw-bold">${v.first}</td><td class="fw-bold">${v.last}</td>
                     <td><span class="group-tag">${cleanTeamName(v.team)}</span></td><td><small>${v.phone || ''}</small></td>
                     <td><small>${v.email || ''}</small></td>
                     <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize || '-'}</span></td>
-                    <td><button onclick="checkIn('${v.id}')" class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}">${v.status === 'Checked In' ? 'ARRIVED' : 'MARK'}</button></td>
-                    <td><div class="action-wrapper"><span class="status-badge ${v.sent === 'Yes' ? 'sent' : 'draft'}">${v.sent === 'Yes' ? '✉️ SENT' : '⚠️ UNSENT'}</span><button onclick="openPartyModal('${v.id}')" class="btn-icon">✏️</button><button onclick="resend('${v.id}')" class="btn-icon" style="${!v.email ? 'opacity:0.3; pointer-events:none' : ''}">🔄</button><button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;">🗑️</button></div></td>
-                </tr>`).join('');
+                    <td>${checkInCell}</td>
+                    <td><div class="action-wrapper">
+                        <span class="status-badge ${v.sent === 'Yes' ? 'sent' : (v.sent === 'N/A' ? 'na' : 'draft')}">${v.sent === 'Yes' ? '✉️ SENT' : (v.sent === 'N/A' ? '🚫 N/A' : '⚠️ UNSENT')}</span>
+                        <button onclick="openPartyModal('${v.id}')" class="btn-icon">✏️</button>
+                        <button onclick="resend('${v.id}')" class="btn-icon" style="${(!v.email || v.sent === 'N/A') ? 'opacity:0.3; pointer-events:none' : ''}">🔄</button>
+                        <button onclick="removeGuest('${v.id}')" class="btn-icon" style="color:#FF3B30;">🗑️</button>
+                    </div></td>
+                </tr>`;
+            }).join('');
         }
         loadTemplateToEditor();
     }
@@ -648,8 +660,12 @@
         const updates = [];
         for (const [id, fields] of Object.entries(pendingEdits)) {
             const originalGuest = currentData.vips.find(v => v.id === id);
+            
+            // Only set email_sent to "No" (to trigger an email) if they weren't explicitly flagged as "N/A"
             if (fields.email !== undefined && fields.email !== originalGuest.email) {
-                fields.email_sent = 'No';
+                if (originalGuest.sent !== 'N/A') {
+                    fields.email_sent = 'No';
+                }
             }
             updates.push(_supabase.from('guests').update(fields).eq('id', id));
         }
@@ -715,7 +731,7 @@
         const container = document.getElementById('dynamicFormContainer');
         if (!container) return;
         let html = '';
-        let guestLimit = (type === 'staff') ? 3 : (type === 'friends') ? 1 : (type === 'acts') ? 10 : (type === 'special') ? 5 : 0;
+        let guestLimit = (type === 'staff') ? 3 : (type === 'acts') ? 10 : (type === 'special') ? 5 : 0;
         
         if (type === 'staff') {
             html += `<div class="section-header">Staff Info</div>
@@ -731,8 +747,12 @@
                 <option value="[Staff]">Staff Email</option>
                 <option value="[Guest]">Guest Email</option>
             </select></div>`;
+        } else if (type === 'friends') {
+            html += `<div class="section-header">Friend of CAB</div>
+            <div class="form-grid"><div><label class="stat-label">First Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Last Name *</label><input type="text" id="mainLastName" class="modern-input" required></div></div>
+            <div class="form-grid"><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
         } else {
-            html += `<div class="section-header">Main Contact</div><div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
+            html += `<div class="section-header">Main Contact (Label Only)</div><div class="form-grid"><div><label class="stat-label">Full Name *</label><input type="text" id="mainName" class="modern-input" required></div><div><label class="stat-label">Email *</label><input type="email" id="mainEmail" class="modern-input" required></div></div>`;
         }
         
         if (guestLimit > 0) {
@@ -754,17 +774,24 @@
         let nameParts = document.getElementById('mainName').value.trim().split(' ');
         
         let mainPayload = { 
-            event_id: currentData.activeId, status: 'Invited', email_sent: 'No', 
-            first_name: nameParts[0], last_name: nameParts.slice(1).join(' ') || '',
+            event_id: currentData.activeId, 
+            status: 'Invited', 
+            // Flag group leaders with 'N/A' so they don't receive emails
+            email_sent: (type === 'acts' || type === 'special') ? 'N/A' : 'No', 
+            first_name: nameParts[0], 
+            last_name: nameParts.slice(1).join(' ') || '',
             email: document.getElementById('mainEmail').value 
         };
         
         if (type === 'staff') mainPayload.team = document.getElementById('mainDept').value;
-        else if (type === 'friends') mainPayload.team = "Friends of CAB Early Access";
+        else if (type === 'friends') {
+            mainPayload.team = "Friends of CAB Early Access";
+            mainPayload.last_name = document.getElementById('mainLastName').value || mainPayload.last_name;
+        }
         else if (type === 'acts') mainPayload.team = "VIP Acts";
         else if (type === 'special') mainPayload.team = "Special Events";
         else if (type === 'single') {
-            mainPayload.last_name = document.getElementById('mainLastName').value;
+            mainPayload.last_name = document.getElementById('mainLastName').value || mainPayload.last_name;
             let baseTeam = document.getElementById('mainGroupInput').value || "Single Manual Add";
             let tplChoice = document.getElementById('singleEmailTemplate').value;
             mainPayload.team = `${baseTeam} ${tplChoice}`.trim();
@@ -859,8 +886,8 @@
 
     async function sendBulk() { 
         if(confirm("Email all eligible unsent tickets?")) { 
-            // Gets EVERYONE who has an email address and hasn't been sent an email yet
-            const unsent = currentData.vips.filter(v => v.sent !== 'Yes' && v.email);
+            // Gets EVERYONE who has an email address and whose status explicitly says 'No' (which excludes 'N/A' managers and 'Yes' already sent)
+            const unsent = currentData.vips.filter(v => v.sent === 'No' && v.email);
             if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
             
             // Calculate estimated time (1.5 seconds per email)
@@ -962,7 +989,7 @@
         if (!res) return;
         res.innerHTML = "";
         if (!val) return;
-        currentData.vips.filter(v => (v.first + ' ' + v.last).toUpperCase().includes(val)).forEach(v => {
+        currentData.vips.filter(v => (v.first + ' ' + v.last).toUpperCase().includes(val) && v.sent !== 'N/A').forEach(v => {
             const d = document.createElement('div');
             d.className = "manual-result-item";
             d.innerHTML = `<div><strong>${v.first} ${v.last}</strong><br><small>${cleanTeamName(v.team)}</small></div><button class="btn-action" style="${v.status === 'Checked In' ? 'background:var(--gradient-success)' : ''}" onclick="checkIn('${v.id}', false, this)">${v.status === 'Checked In' ? '✓' : 'MARK'}</button>`;
