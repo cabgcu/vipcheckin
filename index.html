@@ -823,9 +823,24 @@
             body: body 
         });
         
-        await fetch(`${WEB_APP_URL}?${params.toString()}`, { mode: 'no-cors' });
-        await _supabase.from('guests').update({ email_sent: 'Yes' }).eq('id', guest.id);
-        return true;
+        try {
+            // Add a 10-second timeout to catch hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            await fetch(`${WEB_APP_URL}?${params.toString()}`, { 
+                mode: 'no-cors',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            // Only mark as sent if the network request succeeded
+            await _supabase.from('guests').update({ email_sent: 'Yes' }).eq('id', guest.id);
+            return true;
+        } catch (error) {
+            console.error(`Failed to send email to ${guest.email}:`, error);
+            return false;
+        }
     }
 
     async function resend(id) {
@@ -833,8 +848,12 @@
         if (!guest || !guest.email) { showToast("Invalid email"); return; }
         
         showToast(`Emailing...`);
-        await sendSingleEmail(guest);
-        showToast("Sent!");
+        const success = await sendSingleEmail(guest);
+        if (success) {
+            showToast("Sent!");
+        } else {
+            showToast("⚠️ Failed to send.");
+        }
         refreshData(null, true);
     }
 
@@ -844,11 +863,37 @@
             const unsent = currentData.vips.filter(v => v.sent !== 'Yes' && v.email);
             if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
             
-            showToast(`Processing ${unsent.length} emails...`);
+            // Calculate estimated time (1.5 seconds per email)
+            const estMinutes = Math.ceil((unsent.length * 1.5) / 60);
+            if(!confirm(`You are about to send ${unsent.length} emails. To prevent Google from blocking the emails, they will be sent one at a time.\n\nThis will take approximately ${estMinutes} minute(s). Please leave this page open.`)) {
+                return;
+            }
+            
+            let count = 0;
+            let successCount = 0;
+            let failCount = 0;
+            
             for(const g of unsent) {
-                await sendSingleEmail(g);
+                count++;
+                showToast(`Sending ${count} of ${unsent.length}...`);
+                
+                const success = await sendSingleEmail(g);
+                if (success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+                
+                // Add a 1.5 second delay between emails to prevent Google Apps Script rate limits
+                await new Promise(resolve => setTimeout(resolve, 1500));
             } 
-            showToast("Done!"); 
+            
+            if (failCount > 0) {
+                alert(`Batch complete.\n\n✅ Sent: ${successCount}\n⚠️ Failed: ${failCount}\n\nThe failed guests are still marked as "UNSENT". You can click "Email ALL Tickets" again later to retry them.`);
+            } else {
+                showToast("All emails sent successfully!"); 
+            }
+            
             refreshData(null, true); 
         } 
     }
