@@ -1026,7 +1026,7 @@
             
             if (!response.ok) {
                 const errData = await response.json();
-                console.error("Brevo API Error:", errData);
+                console.error("Email API Error:", errData);
                 if (errData.code === 'unauthorized') {
                     return 'unauthorized';
                 }
@@ -1050,7 +1050,7 @@
         const success = await sendSingleEmail(guest);
         
         if (success === 'unauthorized') {
-            showToast("⚠️ Brevo Error: Invalid API Key. Check settings!");
+            showToast("⚠️ API Error: Invalid Key. Check settings!");
         } else if (success) {
             showToast("Sent!");
         } else {
@@ -1065,7 +1065,7 @@
         const unsent = currentData.vips.filter(v => v.sent === 'No' && v.email);
         if (unsent.length === 0) { showToast("No eligible unsent guests found."); return; }
         
-        if(!confirm(`You are about to send ${unsent.length} emails via Brevo.\n\nClick OK to blast them out!`)) return;
+        if(!confirm(`You are about to send ${unsent.length} emails.\n\nClick OK to send them out!`)) return;
         
         let successCount = 0;
         let failCount = 0;
@@ -1098,7 +1098,7 @@
         loaderText.innerText = 'SYNCING'; 
         
         if (isUnauthorized) {
-            alert(`⚠️ STOPPING: Brevo API Key is invalid.\n\n✅ Sent: ${successCount}\n⚠️ Failed: ${failCount}`);
+            alert(`⚠️ STOPPING: Email API Key is invalid.\n\n✅ Sent: ${successCount}\n⚠️ Failed: ${failCount}`);
         } else if (failCount > 0) {
             alert(`Batch complete.\n\n✅ Sent: ${successCount}\n⚠️ Failed: ${failCount}\n\nThe failed guests are still marked as "UNSENT".`);
         } else {
