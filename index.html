@@ -791,19 +791,45 @@
     async function saveParty(e) {
         e.preventDefault();
         showToast("Saving...");
-        const updates = [];
+        const updatePromises = [];
+        
         for (const [id, fields] of Object.entries(pendingEdits)) {
             const originalGuest = currentData.vips.find(v => v.id === id);
             
-            // Only set email_sent to "No" (to trigger an email) if they weren't explicitly flagged as "N/A"
-            if (fields.email !== undefined && fields.email !== originalGuest.email) {
-                if (originalGuest.sent !== 'N/A') {
-                    fields.email_sent = 'No';
-                }
+            // Check if the email was edited
+            const isEmailChanged = (fields.email !== undefined && fields.email !== originalGuest.email);
+
+            // If email changed (and they are an active ticketed user), invalidate old ticket & generate a new one
+            if (isEmailChanged && originalGuest.sent !== 'N/A') {
+                const newGuestData = {
+                    first_name: fields.first_name !== undefined ? fields.first_name : originalGuest.first,
+                    last_name: fields.last_name !== undefined ? fields.last_name : originalGuest.last,
+                    team: fields.team !== undefined ? fields.team : originalGuest.team,
+                    email: fields.email, // newly assigned email
+                    phone: fields.phone !== undefined ? fields.phone : originalGuest.phone,
+                    shirt_size: fields.shirt_size !== undefined ? fields.shirt_size : originalGuest.shirtSize,
+                    status: originalGuest.status,
+                    email_sent: 'No', // Automatically flag as unsent
+                    event_id: currentData.activeId
+                };
+                
+                // Create new record -> delete old record (this creates a brand new ID/ticket code)
+                const promise = (async () => {
+                    const { error } = await _supabase.from('guests').insert([newGuestData]);
+                    if (!error) {
+                        await _supabase.from('guests').delete().eq('id', id);
+                    } else {
+                        console.error("Failed to insert new guest for ticket change:", error);
+                    }
+                })();
+                updatePromises.push(promise);
+            } else {
+                // Otherwise run a standard update
+                updatePromises.push(_supabase.from('guests').update(fields).eq('id', id));
             }
-            updates.push(_supabase.from('guests').update(fields).eq('id', id));
         }
-        await Promise.all(updates);
+        
+        await Promise.all(updatePromises);
         pendingEdits = {}; 
         closePartyModal();
         showToast("Updated!");
