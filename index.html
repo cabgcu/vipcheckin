@@ -464,8 +464,8 @@
     const SUPABASE_URL = 'https://raraxpjsftqxhwkpwpab.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_p4FqN3nJTT5GFNU_xqZtYg_7fPtkKhS';
     
-    // Miftah API Brevo al-jadid
-    const BREVO_API_KEY = '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'.trim();
+    // API Key will be fetched from Supabase upon login
+    let BREVO_API_KEY = '';
     const SENDER_EMAIL = 'noreply@cabgcu.com';
     const SENDER_NAME = 'Canyon Activities Board';
 
@@ -503,9 +503,19 @@
         }
     }
 
-    function unlockApp() {
+    async function unlockApp() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
+        
+        // Fetch the API Key securely from Supabase
+        const { data, error } = await _supabase.from('secrets').select('value').eq('name', 'BREVO_API_KEY').single();
+        if (data && data.value) {
+            BREVO_API_KEY = data.value.trim();
+        } else {
+            console.error("⚠️ Could not load API key from Supabase 'secrets' table.", error);
+            showToast("⚠️ Failed to load API Key from database");
+        }
+
         refreshData();
         setupRealtime();
         renderAddForm('staff');
