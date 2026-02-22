@@ -8,6 +8,7 @@
     <!-- Dependencies -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
         :root {
@@ -332,6 +333,7 @@
             <button onclick="toggleView('list')" id="nav-list" class="control-item active">📋 VIP LIST</button>
             <button onclick="toggleView('scan')" id="nav-scan" class="control-item">📸 CHECK IN</button>
             <button onclick="toggleView('add')" id="nav-add" class="control-item">👤 ADD</button>
+            <button onclick="toggleView('import')" id="nav-import" class="control-item">📥 IMPORT</button>
             <button onclick="toggleView('settings')" id="nav-settings" class="control-item">⚙️ SETTINGS</button>
         </div>
     </div>
@@ -387,6 +389,30 @@
                 <div id="dynamicFormContainer"></div>
                 <button type="submit" class="btn-action" style="width:100%; padding:18px; margin-top:20px; font-size:1.1rem;">SUBMIT REGISTRATION</button>
             </form>
+        </div>
+    </div>
+
+    <!-- VIEW: IMPORT SPREADSHEETS -->
+    <div id="view-import" class="view" style="display:none;">
+        <div class="frosted form-card">
+            <h2 class="mb-4">Bulk Import & Sync</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">Upload a Google Forms CSV spreadsheet. The system will automatically add new guests and update existing ones seamlessly.</p>
+            
+            <label class="stat-label">Select Spreadsheet Type</label>
+            <select id="importType" class="modern-input" style="margin-bottom:20px;">
+                <option value="friends">Friends of CAB (1 Guest)</option>
+                <option value="acts">VIP Acts Early Access (10 Guests)</option>
+                <option value="staff">Staff Early Access (3 Guests)</option>
+            </select>
+
+            <label class="stat-label">Upload CSV File</label>
+            <div style="background: rgba(255,255,255,0.02); border: 2px dashed var(--glass-border); border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 25px;">
+                <input type="file" id="importFile" accept=".csv" style="color: white; font-size: 1rem; width: 100%;" />
+            </div>
+
+            <button onclick="handleImport()" class="btn-action" style="width:100%; padding:18px; font-size:1.1rem;">RUN SYNC</button>
+            
+            <div id="importProgress" style="display:none; margin-top:20px; color: #0A84FF; font-weight: bold; text-align: center;"></div>
         </div>
     </div>
 
@@ -1260,6 +1286,160 @@
     async function removeGuest(id) { if(confirm("Delete?")) { await _supabase.from('guests').delete().eq('id', id); showToast("Deleted"); } }
     
     async function switchEvent(id) { await refreshData(id); }
+
+    async function handleImport() {
+        const fileInput = document.getElementById('importFile');
+        const file = fileInput.files[0];
+        const type = document.getElementById('importType').value;
+        if (!file) return showToast("Please select a CSV file.");
+
+        document.getElementById('importProgress').innerText = "Parsing CSV...";
+        document.getElementById('importProgress').style.display = "block";
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async function(results) {
+                fileInput.value = ""; // reset file input
+                await processSyncData(type, results.data);
+            }
+        });
+    }
+
+    async function processSyncData(type, rows) {
+        let hostMap = new Map();
+        
+        // Find latest row based on email to prevent duplicates in same sheet
+        rows.forEach(row => {
+            let email = "";
+            if (type === 'friends') email = row['Preferred Email Address'] || row['Email Address'];
+            else if (type === 'acts') email = row['Acts Preferred Email Address'] || row['Email Address'];
+            else if (type === 'staff') email = row['GCU Email Address'] || row['Email Address'];
+            
+            if (email) hostMap.set(email.toLowerCase().trim(), row);
+        });
+
+        const uniqueRows = Array.from(hostMap.values());
+        const total = uniqueRows.length;
+        let processed = 0;
+        
+        // Show loader modal
+        document.getElementById('loader').style.display = 'flex';
+        const loaderText = document.querySelector('#loader span');
+
+        for (const row of uniqueRows) {
+            processed++;
+            loaderText.innerText = `SYNCING ${processed} / ${total}`;
+            document.getElementById('importProgress').innerText = `Syncing ${processed} of ${total}...`;
+            
+            let hName="", hEmail="", hPhone="", hTeam="";
+            let guests = [];
+
+            if (type === 'friends') {
+                hName = row['Full Name'] || "";
+                hEmail = (row['Preferred Email Address'] || "").toLowerCase().trim();
+                hPhone = row['Preferred Phone Number'] || "";
+                hTeam = "Friends of CAB Early Access";
+                
+                if (row['Guest 1 Full Name'] && row['Guest 1 Full Name'].trim() !== "") {
+                    guests.push({ name: row['Guest 1 Full Name'], email: row['Guest 1 Email'] || "", phone: row['Guest 1 Phone Number'] || "", shirtSize: "" });
+                }
+            } else if (type === 'acts') {
+                hName = row['Acts Full Name'] || row['Full Name'] || "";
+                hEmail = (row['Acts Preferred Email Address'] || "").toLowerCase().trim();
+                hPhone = row['Acts Preferred Phone Number'] || "";
+                hTeam = "VIP Acts";
+                
+                for (let i=1; i<=10; i++) {
+                    if (row[`Guest ${i} Full Name`] && row[`Guest ${i} Full Name`].trim() !== "") {
+                        guests.push({ name: row[`Guest ${i} Full Name`], email: row[`Guest ${i} Email`] || "", phone: row[`Guest ${i} Phone Number`] || "", shirtSize: row[`Guest ${i} T-Shirt Size`] || "" });
+                    }
+                }
+            } else if (type === 'staff') {
+                hName = row['Full Name'] || "";
+                hEmail = (row['GCU Email Address'] || "").toLowerCase().trim();
+                hPhone = "";
+                hTeam = row['Department'] || "Staff Early Access";
+                
+                for (let i=1; i<=3; i++) {
+                    if (row[`Guest ${i} Full Name`] && row[`Guest ${i} Full Name`].trim() !== "") {
+                        guests.push({ name: row[`Guest ${i} Full Name`], email: row[`Guest ${i} Email`] || "", phone: "", shirtSize: "" });
+                    }
+                }
+            }
+
+            if (!hName || !hEmail) continue;
+
+            const hParts = hName.trim().split(' ');
+            const hFirst = hParts[0];
+            const hLast = hParts.slice(1).join(' ');
+
+            let existingHost = currentData.vips.find(v => v.email?.toLowerCase() === hEmail);
+            let hostId = null;
+            let oldHostFullName = existingHost ? `${existingHost.first} ${existingHost.last}`.trim() : null;
+
+            if (existingHost) {
+                hostId = existingHost.id;
+                await _supabase.from('guests').update({ first_name: hFirst, last_name: hLast, phone: hPhone, team: hTeam }).eq('id', hostId);
+            } else {
+                const { data } = await _supabase.from('guests').insert([{
+                    event_id: currentData.activeId, first_name: hFirst, last_name: hLast, email: hEmail, phone: hPhone, team: hTeam, status: 'Invited', email_sent: (type === 'acts') ? 'N/A' : 'No'
+                }]).select();
+                if (data && data.length > 0) hostId = data[0].id;
+            }
+
+            if (!hostId) continue;
+
+            let existingGuests = [];
+            if (oldHostFullName) {
+                existingGuests = currentData.vips.filter(v => v.team === `Guest of ${oldHostFullName}`);
+                existingGuests.sort((a,b) => a.id.localeCompare(b.id)); // Maintain mapping order
+            }
+
+            const newGuestTeam = `Guest of ${hName.trim()}`;
+            const maxLoop = Math.max(guests.length, existingGuests.length);
+
+            for (let i = 0; i < maxLoop; i++) {
+                const cG = guests[i];
+                const eG = existingGuests[i];
+
+                if (cG && eG) {
+                    const gParts = cG.name.trim().split(' ');
+                    const gFirst = gParts[0];
+                    const gLast = gParts.slice(1).join(' ');
+
+                    if (cG.email && eG.email && cG.email.toLowerCase() !== eG.email.toLowerCase() && eG.sent !== 'N/A') {
+                        // Email changed -> Invalidate old, create new
+                        await _supabase.from('guests').delete().eq('id', eG.id);
+                        await _supabase.from('guests').insert([{
+                            event_id: currentData.activeId, first_name: gFirst, last_name: gLast, email: cG.email, phone: cG.phone, shirt_size: cG.shirtSize, team: newGuestTeam, status: eG.status, email_sent: 'No'
+                        }]);
+                    } else {
+                        // Standard update
+                        await _supabase.from('guests').update({
+                            first_name: gFirst, last_name: gLast, email: cG.email || eG.email, phone: cG.phone || eG.phone, shirt_size: cG.shirtSize || eG.shirtSize, team: newGuestTeam
+                        }).eq('id', eG.id);
+                    }
+                } else if (cG && !eG) {
+                    // Create new guest
+                    const gParts = cG.name.trim().split(' ');
+                    await _supabase.from('guests').insert([{
+                        event_id: currentData.activeId, first_name: gParts[0], last_name: gParts.slice(1).join(' '), email: cG.email, phone: cG.phone, shirt_size: cG.shirtSize, team: newGuestTeam, status: 'Invited', email_sent: 'No'
+                    }]);
+                } else if (eG && !cG) {
+                    // Guest removed from form
+                    await _supabase.from('guests').delete().eq('id', eG.id);
+                }
+            }
+        }
+
+        document.getElementById('loader').style.display = 'none';
+        loaderText.innerText = 'SYNCING';
+        document.getElementById('importProgress').innerText = "Sync Complete!";
+        setTimeout(() => { document.getElementById('importProgress').style.display = "none"; }, 3000);
+        showToast("Bulk Sync Complete!");
+        refreshData(null, true);
+    }
 
     document.getElementById('hardwareInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') { 
