@@ -403,6 +403,7 @@
                 <option value="friends">Friends of CAB (1 Guest)</option>
                 <option value="acts">VIP Acts Early Access (10 Guests)</option>
                 <option value="staff">Staff Early Access (3 Guests)</option>
+                <option value="special">VIP Special Events (5 Guests)</option>
             </select>
 
             <label class="stat-label">Upload CSV File</label>
@@ -1315,6 +1316,7 @@
             if (type === 'friends') email = row['Preferred Email Address'] || row['Email Address'];
             else if (type === 'acts') email = row['Acts Preferred Email Address'] || row['Email Address'];
             else if (type === 'staff') email = row['GCU Email Address'] || row['Email Address'];
+            else if (type === 'special') email = row['Preferred Email Address'] || row['Email Address'];
             
             if (email) hostMap.set(email.toLowerCase().trim(), row);
         });
@@ -1366,6 +1368,22 @@
                         guests.push({ name: row[`Guest ${i} Full Name`], email: row[`Guest ${i} Email`] || "", phone: "", shirtSize: "" });
                     }
                 }
+            } else if (type === 'special') {
+                hName = row['Full Name'] || "";
+                hEmail = (row['Preferred Email Address'] || "").toLowerCase().trim();
+                hPhone = row['Preferred Phone Number'] || "";
+                hTeam = "Special Events";
+                
+                for (let i=1; i<=5; i++) {
+                    if (row[`Guest ${i} Full Name`] && row[`Guest ${i} Full Name`].trim() !== "") {
+                        guests.push({ 
+                            name: row[`Guest ${i} Full Name`], 
+                            email: row[`Guest ${i} Email`] || "", 
+                            phone: row[`Guest ${i} Phone Number`] || "", 
+                            shirtSize: row[`Guest ${i} T-Shirt Size`] || "" 
+                        });
+                    }
+                }
             }
 
             if (!hName || !hEmail) continue;
@@ -1383,7 +1401,7 @@
                 await _supabase.from('guests').update({ first_name: hFirst, last_name: hLast, phone: hPhone, team: hTeam }).eq('id', hostId);
             } else {
                 const { data } = await _supabase.from('guests').insert([{
-                    event_id: currentData.activeId, first_name: hFirst, last_name: hLast, email: hEmail, phone: hPhone, team: hTeam, status: 'Invited', email_sent: (type === 'acts') ? 'N/A' : 'No'
+                    event_id: currentData.activeId, first_name: hFirst, last_name: hLast, email: hEmail, phone: hPhone, team: hTeam, status: 'Invited', email_sent: (type === 'acts' || type === 'special') ? 'N/A' : 'No'
                 }]).select();
                 if (data && data.length > 0) hostId = data[0].id;
             }
