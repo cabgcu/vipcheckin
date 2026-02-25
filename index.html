@@ -288,19 +288,23 @@
     </div>
 </div>
 
-<!-- CHECK IN ALERT MODAL -->
+<!-- DYNAMIC CHECK IN ALERT MODAL -->
 <div id="shirtAlert" class="modal-overlay" style="z-index:20002; background:rgba(0,0,0,0.95);" onclick="closeShirtAlert()">
-    <div class="modal-content" style="text-align:center; border: 2px solid #34C759; max-width:400px;" onclick="event.stopPropagation()">
-        <div style="font-size:4rem; margin-bottom:10px;">✅</div>
-        <h2 style="color:#34C759; margin:0; font-size:2rem; font-weight:800;">CHECKED IN</h2>
+    <div id="alertContentBox" class="modal-content" style="text-align:center; border: 2px solid #34C759; max-width:400px;" onclick="event.stopPropagation()">
+        <div id="alertIcon" style="font-size:4rem; margin-bottom:10px;">✅</div>
+        <h2 id="alertTitle" style="color:#34C759; margin:0; font-size:2rem; font-weight:800;">CHECKED IN</h2>
+        <div id="alertMessage" style="color:#FF9500; font-size: 1.1rem; font-weight:bold; margin-top: 15px; display:none;"></div>
+        
         <h3 id="alertGuestName" style="color:#fff; margin:15px 0 5px 0; font-size:1.4rem;">Guest Name</h3>
         <h4 id="alertGuestGroup" style="color:var(--text-muted); margin:0 0 20px 0; text-transform:uppercase; letter-spacing:1px; font-size:0.9rem;">VIP GROUP</h4>
+        
         <div id="shirtDisplaySection">
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
             <div style="font-size:1rem; color:#BF5AF2; font-weight:bold; letter-spacing:1px;">SHIRT SIZE</div>
             <h1 id="alertShirtSize" style="font-size:4rem; margin:10px 0; color:#fff;">XL</h1>
         </div>
-        <div style="margin-top:20px; font-size:0.8rem; color:#666; font-style:italic;">Dismisses automatically in 2s... <br>Tap anywhere or press ESC to close</div>
+        
+        <div style="margin-top:20px; font-size:0.8rem; color:#666; font-style:italic;">Tap anywhere or press ESC to close</div>
     </div>
 </div>
 
@@ -588,7 +592,7 @@
     }
 
     function generateEmailHtml(text, bannerUrl, headingText, barcodeData) {
-        const barcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + barcodeData + "&format=png";
+        const barcodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + barcodeData + "&format=png&bgcolor=FFFFFF&color=000000&margin=10";
         const displayId = barcodeData === 'PREVIEW1' ? 'PREVIEW1' : String(barcodeData).substring(0, 8);
         
         const bannerHtml = bannerUrl && bannerUrl.trim() !== "" ? `
@@ -640,7 +644,7 @@
                                     <table border="0" cellspacing="0" cellpadding="0" width="100%">
                                         <tr>
                                             <td align="center" style="background: #ffffff; padding: 25px; border-radius: 16px; border: 2px solid #eeeeee;">
-                                                <img src="${barcodeUrl}" alt="Ticket QR Code" width="250" height="250" style="display: block; border: 0; max-width: 100%; height: auto;">
+                                                <img src="${barcodeUrl}" alt="Ticket QR Code" width="250" height="250" style="display: block; margin: 0 auto; box-sizing: border-box; border: 0; max-width: 100%; height: auto; background-color: #ffffff !important; padding: 10px; border-radius: 8px;">
                                             </td>
                                         </tr>
                                     </table>
@@ -1161,6 +1165,61 @@
         refreshData(null, true); 
     }
 
+    function showScanModal(type, title, message, guest) {
+        const box = document.getElementById('alertContentBox');
+        const icon = document.getElementById('alertIcon');
+        const titleEl = document.getElementById('alertTitle');
+        const nameEl = document.getElementById('alertGuestName');
+        const groupEl = document.getElementById('alertGuestGroup');
+        const msgEl = document.getElementById('alertMessage');
+        const shirtSec = document.getElementById('shirtDisplaySection');
+
+        // Toggle visibilities based on guest existence and type
+        nameEl.style.display = guest ? 'block' : 'none';
+        groupEl.style.display = guest ? 'block' : 'none';
+        msgEl.style.display = message ? 'block' : 'none';
+        shirtSec.style.display = (guest && guest.shirtSize && type === 'success') ? 'block' : 'none'; 
+
+        titleEl.innerText = title;
+        if (message) msgEl.innerText = message;
+        
+        if (guest) {
+            nameEl.innerText = `${guest.first} ${guest.last}`;
+            groupEl.innerText = cleanTeamName(guest.team);
+            document.getElementById('alertShirtSize').innerText = guest.shirtSize || 'N/A';
+        }
+
+        // Apply styles based on status
+        if (type === 'success') {
+            box.style.borderColor = '#34C759';
+            titleEl.style.color = '#34C759';
+            icon.innerText = '✅';
+            msgEl.style.color = '#34C759';
+        } else if (type === 'warning') {
+            box.style.borderColor = '#FF9500';
+            titleEl.style.color = '#FF9500';
+            icon.innerText = '⚠️';
+            msgEl.style.color = '#FF9500';
+        } else if (type === 'error') {
+            box.style.borderColor = '#FF3B30';
+            titleEl.style.color = '#FF3B30';
+            icon.innerText = '❌';
+            msgEl.style.color = '#FF3B30';
+        }
+
+        const shirtAlert = document.getElementById('shirtAlert');
+        shirtAlert.style.display = 'flex';
+        shirtAlert.style.opacity = '0';
+        setTimeout(() => { shirtAlert.style.opacity = '1'; }, 10);
+
+        if (alertTimeout) clearTimeout(alertTimeout);
+        // Error and Warning stay up longer to ensure door staff sees it
+        const duration = type === 'success' ? 2000 : 3500;
+        alertTimeout = setTimeout(() => {
+            closeShirtAlert();
+        }, duration);
+    }
+
     async function checkIn(id, isScan = false, el = null) {
         const existingAlert = document.getElementById('shirtAlert');
         if (existingAlert && existingAlert.style.display === 'flex') {
@@ -1168,27 +1227,33 @@
         }
 
         const guest = currentData.vips.find(v => v.id === id);
-        if (!guest) return;
-        const newStatus = guest.status === 'Checked In' ? 'Invited' : 'Checked In';
+        
+        // 1. NOT FOUND / INVALID
+        if (!guest) {
+            if (isScan) {
+                showScanModal('error', 'INVALID TICKET', 'Guest not found in system.', null);
+            }
+            return;
+        }
+
+        // 2. ALREADY CHECKED IN (for scanner only to prevent un-checking)
+        if (isScan && guest.status === 'Checked In') {
+            showScanModal('warning', 'ALREADY SCANNED', 'This ticket has already been used.', guest);
+            return; // Exit here so it doesn't un-check them
+        }
+
+        // 3. TOGGLE OR CHECK IN
+        const newStatus = (guest.status === 'Checked In' && !isScan) ? 'Invited' : 'Checked In';
         if (el) { el.style.background = newStatus === 'Checked In' ? 'var(--gradient-success)' : ''; el.innerText = newStatus === 'Checked In' ? '✓' : 'MARK'; }
         
         await _supabase.from('guests').update({ status: newStatus }).eq('id', id);
         
+        // Update local memory so sequential scans register properly
+        guest.status = newStatus;
+        refreshData(null, true);
+        
         if (newStatus === 'Checked In') {
-            document.getElementById('alertGuestName').innerText = `${guest.first} ${guest.last}`;
-            document.getElementById('alertGuestGroup').innerText = cleanTeamName(guest.team);
-            document.getElementById('alertShirtSize').innerText = guest.shirtSize || 'N/A';
-            document.getElementById('shirtDisplaySection').style.display = guest.shirtSize ? 'block' : 'none';
-            
-            const shirtAlert = document.getElementById('shirtAlert');
-            shirtAlert.style.display = 'flex';
-            shirtAlert.style.opacity = '0';
-            setTimeout(() => { shirtAlert.style.opacity = '1'; }, 10);
-
-            if (alertTimeout) clearTimeout(alertTimeout);
-            alertTimeout = setTimeout(() => {
-                closeShirtAlert();
-            }, 2000);
+            showScanModal('success', 'CHECKED IN', null, guest);
         }
     }
 
