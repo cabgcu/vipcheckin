@@ -561,7 +561,9 @@
     window.addEventListener('keydown', (e) => {
         const shirtAlert = document.getElementById('shirtAlert');
         if (shirtAlert && shirtAlert.style.display === 'flex') {
-            if (e.key === 'Escape' || e.key === 'Enter') {
+            // Removed 'Enter' so the hardware scanner's simulated Enter key 
+            // doesn't instantly dismiss the modal as soon as it opens
+            if (e.key === 'Escape') {
                 closeShirtAlert();
             }
         }
@@ -1216,8 +1218,9 @@
 
         if (alertTimeout) clearTimeout(alertTimeout);
         
-        // All alerts now stay up for exactly 2.5 seconds uniformly
-        const duration = 2500;
+        // Increased durations significantly so door staff have time to read
+        // Success: 4 seconds. Warnings/Errors: 5.5 seconds.
+        const duration = type === 'success' ? 4000 : 5500;
         alertTimeout = setTimeout(() => {
             closeShirtAlert();
         }, duration);
@@ -1525,6 +1528,10 @@
 
     document.getElementById('hardwareInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') { 
+            // Prevent the enter key from bubbling up to the window
+            e.preventDefault();
+            e.stopPropagation();
+            
             checkIn(this.value.trim().split('id=')[1]?.split('&')[0] || this.value.trim(), true); 
             this.value = ''; 
         }
