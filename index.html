@@ -508,6 +508,7 @@
     let currentTemplateType = 'vip';
     let pendingEdits = {};
     let alertTimeout = null; 
+    let closeAnimTimeout = null;
 
     const STAFF_DEPTS = ["Campus Health", "Campus Recreation", "Club Sports", "Community Standards", "Housing Operations", "Residence Life", "Spiritual Life", "Student Care", "Student Engagement", "Welcome Programs", "Other", "Staff Early Access"];
 
@@ -1166,6 +1167,8 @@
     }
 
     function showScanModal(type, title, message, guest) {
+        if (closeAnimTimeout) clearTimeout(closeAnimTimeout);
+
         const box = document.getElementById('alertContentBox');
         const icon = document.getElementById('alertIcon');
         const titleEl = document.getElementById('alertTitle');
@@ -1209,23 +1212,18 @@
 
         const shirtAlert = document.getElementById('shirtAlert');
         shirtAlert.style.display = 'flex';
-        shirtAlert.style.opacity = '0';
         setTimeout(() => { shirtAlert.style.opacity = '1'; }, 10);
 
         if (alertTimeout) clearTimeout(alertTimeout);
-        // Error and Warning stay up longer to ensure door staff sees it
-        const duration = type === 'success' ? 2000 : 3500;
+        
+        // All alerts now stay up for exactly 2.5 seconds uniformly
+        const duration = 2500;
         alertTimeout = setTimeout(() => {
             closeShirtAlert();
         }, duration);
     }
 
     async function checkIn(id, isScan = false, el = null) {
-        const existingAlert = document.getElementById('shirtAlert');
-        if (existingAlert && existingAlert.style.display === 'flex') {
-            closeShirtAlert();
-        }
-
         const guest = currentData.vips.find(v => v.id === id);
         
         // 1. NOT FOUND / INVALID
@@ -1274,7 +1272,8 @@
         const shirtAlert = document.getElementById('shirtAlert');
         if (shirtAlert && shirtAlert.style.display === 'flex') {
             shirtAlert.style.opacity = '0';
-            setTimeout(() => {
+            if (closeAnimTimeout) clearTimeout(closeAnimTimeout);
+            closeAnimTimeout = setTimeout(() => {
                 shirtAlert.style.display = 'none';
             }, 300); 
         }
