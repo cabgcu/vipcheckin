@@ -132,7 +132,7 @@
         }
         .control-item.active { background: var(--gradient-accent); border: none; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); }
 
-        .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+        .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 20px; }
         .stat-card { padding: 24px; border-radius: var(--radius-card); text-align: center; transition: transform 0.3s ease; }
         .stat-val { font-size: 2.8rem; font-weight: 800; display: block; letter-spacing: -0.02em; }
         
@@ -342,16 +342,22 @@
         </div>
     </div>
 
-    <div class="stats-container" id="statsBar">
-        <div class="frosted stat-card"><span class="stat-label">Total VIPs</span><span class="stat-val" id="countTotal">0</span></div>
-        <div class="frosted stat-card"><span class="stat-label">Checked In</span><span class="stat-val" style="color:#34C759" id="countIn">0</span></div>
-        <div class="frosted stat-card"><span class="stat-label">Remaining</span><span class="stat-val" style="color:#0A84FF" id="countLeft">0</span></div>
-    </div>
-
     <!-- VIEW: LIST -->
     <div id="view-list" class="view">
-        <div style="display:flex; gap:12px; margin-bottom: 30px;">
-            <input type="text" id="search" class="modern-input" placeholder="Search name or group..." onkeyup="filterTable()" style="flex:1;">
+        <div class="stats-container" id="statsBar">
+            <div class="frosted stat-card"><span class="stat-label">Total VIPs</span><span class="stat-val" id="countTotal">0</span></div>
+            <div class="frosted stat-card"><span class="stat-label">Checked In</span><span class="stat-val" style="color:#34C759" id="countIn">0</span></div>
+            <div class="frosted stat-card"><span class="stat-label">Remaining</span><span class="stat-val" style="color:#0A84FF" id="countLeft">0</span></div>
+        </div>
+        
+        <!-- Breakdown section -->
+        <div id="statsBreakdown" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px; font-size:0.85rem;"></div>
+
+        <div style="display:flex; gap:12px; margin-bottom: 30px; flex-wrap: wrap;">
+            <input type="text" id="search" class="modern-input" placeholder="Search name or group..." onkeyup="filterTable()" style="flex:1; min-width: 200px;">
+            <select id="typeFilter" class="modern-input" style="flex:0.5; min-width: 150px;" onchange="filterTable()">
+                <option value="ALL">All Types</option>
+            </select>
             <button onclick="sendBulk()" id="blastBtn" class="btn-action">Email ALL Tickets</button>
         </div>
         <div class="table-container">
@@ -575,6 +581,29 @@
         return team.replace(/\[(VIP|Staff|Guest)\]/gi, '').trim();
     }
 
+    // Helper: Find a guest's actual VIP type by tracing their host
+    function getVIPType(guest) {
+        let teamStr = guest.team || "Unknown";
+        if (teamStr.startsWith("Guest of ")) {
+            let hostName = teamStr.replace("Guest of ", "").trim();
+            // Try to find the host to see what their team is
+            let host = currentData.vips.find(v => (v.first + " " + v.last).trim() === hostName && !v.team.startsWith("Guest of "));
+            if (host) {
+                teamStr = host.team;
+            } else {
+                // Fallback if host is deleted or not found
+                return "Guest / Uncategorized";
+            }
+        }
+        
+        // Group all staff departments into a single category for totals and filters
+        if (STAFF_DEPTS.includes(teamStr)) {
+            return "Staff Early Access";
+        }
+        
+        return teamStr;
+    }
+
     function getTemplateType(teamStr) {
         if (!teamStr) return 'guest'; // default
         if (teamStr.includes("[VIP]") || teamStr === "VIP Acts" || teamStr === "Special Events") return 'vip';
@@ -742,6 +771,41 @@
         document.getElementById('countTotal').innerText = checkableVips.length;
         document.getElementById('countIn').innerText = checkedIn;
         document.getElementById('countLeft').innerText = checkableVips.length - checkedIn;
+
+        // CALCULATE BREAKDOWN OF VIP TYPES
+        let typeCounts = {};
+        let uniqueTypes = new Set();
+
+        checkableVips.forEach(v => {
+            let t = cleanTeamName(getVIPType(v));
+            uniqueTypes.add(t);
+            typeCounts[t] = (typeCounts[t] || 0) + 1;
+        });
+
+        // Update Filter Dropdown Options dynamically
+        const typeFilter = document.getElementById('typeFilter');
+        if (typeFilter) {
+            const currentFilterValue = typeFilter.value || "ALL";
+            typeFilter.innerHTML = `<option value="ALL">All Types</option><option value="UNSENT">⚠️ Unsent Tickets</option>` + 
+                Array.from(uniqueTypes).sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            // Keep previous selection if it exists
+            if (Array.from(uniqueTypes).includes(currentFilterValue) || currentFilterValue === "UNSENT") {
+                typeFilter.value = currentFilterValue;
+            } else {
+                typeFilter.value = "ALL";
+            }
+        }
+
+        // Update Breakdown UI Strip
+        const breakdownContainer = document.getElementById('statsBreakdown');
+        if (breakdownContainer) {
+            breakdownContainer.innerHTML = Array.from(uniqueTypes).sort().map(t =>
+                `<div class="frosted" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:8px; align-items:center;">
+                    <span style="color:var(--text-muted);">${t}:</span>
+                    <span style="font-weight:bold; color:#BF5AF2;">${typeCounts[t]}</span>
+                </div>`
+            ).join('');
+        }
         
         const tableBody = document.getElementById('guestTableBody');
         if (tableBody) {
@@ -754,11 +818,25 @@
                 
                 let rowStyle = isLabel ? 'background: rgba(255, 255, 255, 0.015); border-left: 2px solid var(--text-muted);' : '';
                 
+                // Determine the true type and subtext if they are a guest
+                let actualType = cleanTeamName(getVIPType(v));
+                let isGuestOf = v.team.startsWith("Guest of ");
+                
+                let subText = '';
+                if (isGuestOf) {
+                    subText = `<div style="color:var(--text-muted); font-size:0.7rem; margin-top:4px; font-weight: 500;">${v.team}</div>`;
+                } else if (STAFF_DEPTS.includes(v.team) && v.team !== "Staff Early Access") {
+                    subText = `<div style="color:var(--text-muted); font-size:0.7rem; margin-top:4px; font-weight: 500;">Dept: ${v.team}</div>`;
+                }
+
                 return `
-                <tr style="${rowStyle}">
+                <tr style="${rowStyle}" data-type="${actualType}" data-sent="${v.sent}">
                     <td class="fw-bold" style="${isLabel ? 'color: var(--text-muted);' : ''}">${v.first}</td>
                     <td class="fw-bold" style="${isLabel ? 'color: var(--text-muted);' : ''}">${v.last}</td>
-                    <td><span class="group-tag" style="${isLabel ? 'color: var(--text-muted);' : ''}">${cleanTeamName(v.team)}</span></td>
+                    <td>
+                        <span class="group-tag" style="${isLabel ? 'color: var(--text-muted);' : ''}">${actualType}</span>
+                        ${subText}
+                    </td>
                     <td><small>${v.phone || ''}</small></td>
                     <td><small>${v.email || ''}</small></td>
                     <td><span style="color:#BF5AF2; font-weight:800;">${v.shirtSize || '-'}</span></td>
@@ -772,6 +850,9 @@
                 </tr>`;
             }).join('');
         }
+        
+        // Ensure filter remains active if they refresh
+        filterTable();
         loadTemplateToEditor();
     }
 
@@ -1190,7 +1271,7 @@
         
         if (guest) {
             nameEl.innerText = `${guest.first} ${guest.last}`;
-            groupEl.innerText = cleanTeamName(guest.team);
+            groupEl.innerText = cleanTeamName(guest.team); // Keeps original group text for the scanner
             document.getElementById('alertShirtSize').innerText = guest.shirtSize || 'N/A';
         }
 
@@ -1264,12 +1345,40 @@
         document.getElementById('view-' + v).style.display = 'block';
         document.getElementById('nav-' + v).classList.add('active');
         document.getElementById('statsBar').style.display = v === 'list' ? 'grid' : 'none';
+        
+        // Handle filter layout adjustments 
+        const statsBreakdown = document.getElementById('statsBreakdown');
+        if(statsBreakdown) statsBreakdown.style.display = v === 'list' ? 'flex' : 'none';
+
         if (v === 'scan') setTimeout(() => document.getElementById('hardwareInput').focus(), 100);
     }
 
     function showToast(m) { const t = document.getElementById('toast'); if(t) { t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); } }
     
-    function filterTable() { const val = document.getElementById("search").value.toUpperCase(); document.querySelectorAll("#guestTableBody tr").forEach(r => r.style.display = r.innerText.toUpperCase().includes(val) ? "" : "none"); }
+    function filterTable() { 
+        const textVal = document.getElementById("search").value.toUpperCase(); 
+        const typeFilterEl = document.getElementById("typeFilter");
+        const typeVal = typeFilterEl ? typeFilterEl.value : "ALL";
+        
+        document.querySelectorAll("#guestTableBody tr").forEach(r => {
+            const rowText = r.innerText.toUpperCase();
+            const rowType = r.getAttribute('data-type');
+            const rowSent = r.getAttribute('data-sent');
+            
+            const textMatch = rowText.includes(textVal);
+            
+            let typeMatch = false;
+            if (typeVal === "ALL") {
+                typeMatch = true;
+            } else if (typeVal === "UNSENT") {
+                typeMatch = (rowSent === "No");
+            } else {
+                typeMatch = (rowType === typeVal);
+            }
+            
+            r.style.display = (textMatch && typeMatch) ? "" : "none";
+        }); 
+    }
     
     function closeShirtAlert() { 
         const shirtAlert = document.getElementById('shirtAlert');
