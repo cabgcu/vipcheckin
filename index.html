@@ -351,10 +351,10 @@
         </div>
         
         <!-- Breakdown section -->
-        <div id="statsBreakdown" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; font-size:0.85rem;"></div>
+        <div id="statsBreakdown" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; font-size:0.85rem; align-items:center;"></div>
         
-        <!-- Shirt Size Breakdown -->
-        <div id="shirtBreakdown" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px; font-size:0.85rem;"></div>
+        <!-- Shirt Size Breakdown Details -->
+        <div id="shirtBreakdownDetails" style="display:none; flex-direction:column; gap:8px; margin-bottom:30px; font-size:0.85rem;"></div>
 
         <div style="display:flex; gap:12px; margin-bottom: 30px; flex-wrap: wrap;">
             <input type="text" id="search" class="modern-input" placeholder="Search name or group..." onkeyup="filterTable()" style="flex:1; min-width: 200px;">
@@ -799,17 +799,6 @@
             }
         }
 
-        // Update Breakdown UI Strip
-        const breakdownContainer = document.getElementById('statsBreakdown');
-        if (breakdownContainer) {
-            breakdownContainer.innerHTML = Array.from(uniqueTypes).sort().map(t =>
-                `<div class="frosted" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:8px; align-items:center;">
-                    <span style="color:var(--text-muted);">${t}:</span>
-                    <span style="font-weight:bold; color:#BF5AF2;">${typeCounts[t]}</span>
-                </div>`
-            ).join('');
-        }
-
         // CALCULATE BREAKDOWN OF SHIRT SIZES
         let groupShirtCounts = {};
         let globalTotalShirts = 0;
@@ -831,20 +820,34 @@
             }
         });
 
-        // Update Shirt Breakdown UI Strip
-        const shirtContainer = document.getElementById('shirtBreakdown');
-        if (shirtContainer) {
-            shirtContainer.style.flexDirection = 'column';
-            shirtContainer.style.gap = '8px';
+        // Update Breakdown UI Strip
+        const breakdownContainer = document.getElementById('statsBreakdown');
+        if (breakdownContainer) {
+            let breakdownHtml = Array.from(uniqueTypes).sort().map(t =>
+                `<div class="frosted" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:8px; align-items:center;">
+                    <span style="color:var(--text-muted);">${t}:</span>
+                    <span style="font-weight:bold; color:#BF5AF2;">${typeCounts[t]}</span>
+                </div>`
+            ).join('');
 
+            // Append the total shirts button to the same inline strip
+            if (globalTotalShirts > 0) {
+                breakdownHtml += `
+                <div class="frosted" onclick="toggleShirtDetails()" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(10, 132, 255, 0.4); background: rgba(10, 132, 255, 0.05); color:#fff; display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+                    <span style="font-weight:bold;">👕 Total Shirts: <span style="color:#0A84FF;">${globalTotalShirts}</span></span>
+                    <span id="shirtToggleIcon" style="font-size: 0.8rem; opacity: 0.7;">▼</span>
+                </div>`;
+            }
+
+            breakdownContainer.innerHTML = breakdownHtml;
+        }
+
+        // Update Shirt Breakdown Details
+        const shirtDetailsContainer = document.getElementById('shirtBreakdownDetails');
+        if (shirtDetailsContainer) {
             if (globalTotalShirts > 0) {
                 const sizeOrder = ["Small", "Medium", "Large", "X-Large", "XX-Large", "XXX-Large"];
-                let html = `
-                <div class="frosted" onclick="toggleShirtDetails()" style="cursor: pointer; padding: 8px 16px; border-radius: 16px; border: 1px solid rgba(10, 132, 255, 0.4); background: rgba(10, 132, 255, 0.05); color:#fff; font-weight:bold; margin-bottom: 8px; align-self: flex-start; display: flex; align-items: center; gap: 8px; transition: 0.2s;">
-                    <span>👕 Grand Total Shirts: ${globalTotalShirts}</span>
-                    <span id="shirtToggleIcon" style="font-size: 0.8rem; opacity: 0.7;">▼</span>
-                </div>
-                <div id="shirtDetailsContainer" style="display: none; flex-direction: column; gap: 8px; width: 100%;">`;
+                let detailsHtml = '';
 
                 Object.keys(groupShirtCounts).sort().forEach(group => {
                     let groupData = groupShirtCounts[group];
@@ -864,18 +867,17 @@
                         </div>`
                     ).join('');
 
-                    html += `
+                    detailsHtml += `
                     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 16px; border: 1px solid var(--glass-border);">
                         <div style="font-weight: 800; color: #BF5AF2; min-width: 140px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 12px;">${group} <span style="color:var(--text-muted);">(${groupData.total})</span></div>
                         ${sizeHtml}
                     </div>`;
                 });
-                
-                html += `</div>`; // Close shirtDetailsContainer
 
-                shirtContainer.innerHTML = html;
+                shirtDetailsContainer.innerHTML = detailsHtml;
             } else {
-                shirtContainer.innerHTML = '';
+                shirtDetailsContainer.innerHTML = '';
+                shirtDetailsContainer.style.display = 'none';
             }
         }
         
@@ -1412,10 +1414,10 @@
     }
 
     function toggleShirtDetails() {
-        const details = document.getElementById('shirtDetailsContainer');
+        const details = document.getElementById('shirtBreakdownDetails');
         const icon = document.getElementById('shirtToggleIcon');
         if (details && icon) {
-            if (details.style.display === 'none') {
+            if (details.style.display === 'none' || details.style.display === '') {
                 details.style.display = 'flex';
                 icon.innerText = '▲';
             } else {
@@ -1436,8 +1438,12 @@
         const statsBreakdown = document.getElementById('statsBreakdown');
         if(statsBreakdown) statsBreakdown.style.display = v === 'list' ? 'flex' : 'none';
         
-        const shirtBreakdown = document.getElementById('shirtBreakdown');
-        if(shirtBreakdown) shirtBreakdown.style.display = v === 'list' ? 'flex' : 'none';
+        const shirtBreakdownDetails = document.getElementById('shirtBreakdownDetails');
+        if(shirtBreakdownDetails && v !== 'list') {
+            shirtBreakdownDetails.style.display = 'none';
+            const icon = document.getElementById('shirtToggleIcon');
+            if (icon) icon.innerText = '▼';
+        }
 
         if (v === 'scan') setTimeout(() => document.getElementById('hardwareInput').focus(), 100);
     }
