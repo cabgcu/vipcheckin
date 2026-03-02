@@ -811,41 +811,69 @@
         }
 
         // CALCULATE BREAKDOWN OF SHIRT SIZES
-        let shirtCounts = {};
-        let totalShirts = 0;
+        let groupShirtCounts = {};
+        let globalTotalShirts = 0;
 
         currentData.vips.forEach(v => {
             let s = v.shirtSize;
             if (s && s !== '-' && s !== 'N/A' && s.trim() !== '') {
-                shirtCounts[s] = (shirtCounts[s] || 0) + 1;
-                totalShirts++;
+                // Separate hosts from guests by checking the team string
+                let isGuest = v.team && v.team.startsWith("Guest of ");
+                let baseType = cleanTeamName(getVIPType(v));
+                let type = isGuest ? `${baseType} (Guests)` : baseType;
+
+                if (!groupShirtCounts[type]) {
+                    groupShirtCounts[type] = { total: 0, sizes: {} };
+                }
+                groupShirtCounts[type].sizes[s] = (groupShirtCounts[type].sizes[s] || 0) + 1;
+                groupShirtCounts[type].total++;
+                globalTotalShirts++;
             }
         });
 
         // Update Shirt Breakdown UI Strip
         const shirtContainer = document.getElementById('shirtBreakdown');
         if (shirtContainer) {
-            if (totalShirts > 0) {
+            shirtContainer.style.flexDirection = 'column';
+            shirtContainer.style.gap = '8px';
+
+            if (globalTotalShirts > 0) {
                 const sizeOrder = ["Small", "Medium", "Large", "X-Large", "XX-Large", "XXX-Large"];
-                let sortedSizes = Object.keys(shirtCounts).sort((a, b) => {
-                    let ia = sizeOrder.indexOf(a);
-                    let ib = sizeOrder.indexOf(b);
-                    if(ia !== -1 && ib !== -1) return ia - ib;
-                    if(ia !== -1) return -1;
-                    if(ib !== -1) return 1;
-                    return a.localeCompare(b);
+                let html = `
+                <div class="frosted" onclick="toggleShirtDetails()" style="cursor: pointer; padding: 8px 16px; border-radius: 16px; border: 1px solid rgba(10, 132, 255, 0.4); background: rgba(10, 132, 255, 0.05); color:#fff; font-weight:bold; margin-bottom: 8px; align-self: flex-start; display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+                    <span>👕 Grand Total Shirts: ${globalTotalShirts}</span>
+                    <span id="shirtToggleIcon" style="font-size: 0.8rem; opacity: 0.7;">▼</span>
+                </div>
+                <div id="shirtDetailsContainer" style="display: none; flex-direction: column; gap: 8px; width: 100%;">`;
+
+                Object.keys(groupShirtCounts).sort().forEach(group => {
+                    let groupData = groupShirtCounts[group];
+                    let sortedSizes = Object.keys(groupData.sizes).sort((a, b) => {
+                        let ia = sizeOrder.indexOf(a);
+                        let ib = sizeOrder.indexOf(b);
+                        if(ia !== -1 && ib !== -1) return ia - ib;
+                        if(ia !== -1) return -1;
+                        if(ib !== -1) return 1;
+                        return a.localeCompare(b);
+                    });
+
+                    let sizeHtml = sortedSizes.map(s =>
+                        `<div class="frosted" style="padding: 4px 12px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:6px; align-items:center; font-size: 0.8rem;">
+                            <span style="color:var(--text-muted);">${s}:</span>
+                            <span style="font-weight:bold; color:#0A84FF;">${groupData.sizes[s]}</span>
+                        </div>`
+                    ).join('');
+
+                    html += `
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                        <div style="font-weight: 800; color: #BF5AF2; min-width: 140px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 12px;">${group} <span style="color:var(--text-muted);">(${groupData.total})</span></div>
+                        ${sizeHtml}
+                    </div>`;
                 });
+                
+                html += `</div>`; // Close shirtDetailsContainer
 
-                let shirtHtml = sortedSizes.map(s =>
-                    `<div class="frosted" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:8px; align-items:center;">
-                        <span style="color:var(--text-muted);">${s}:</span>
-                        <span style="font-weight:bold; color:#0A84FF;">${shirtCounts[s]}</span>
-                    </div>`
-                ).join('');
-
-                shirtContainer.innerHTML = `<div class="frosted" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); display:flex; gap:8px; align-items:center; border-color: rgba(10, 132, 255, 0.4); background: rgba(10, 132, 255, 0.05);">
-                        <span style="color:#fff; font-weight:bold;">👕 Total Shirts: ${totalShirts}</span>
-                    </div>` + shirtHtml;
+                shirtContainer.innerHTML = html;
             } else {
                 shirtContainer.innerHTML = '';
             }
@@ -1380,6 +1408,20 @@
         
         if (newStatus === 'Checked In') {
             showScanModal('success', 'CHECKED IN', null, guest);
+        }
+    }
+
+    function toggleShirtDetails() {
+        const details = document.getElementById('shirtDetailsContainer');
+        const icon = document.getElementById('shirtToggleIcon');
+        if (details && icon) {
+            if (details.style.display === 'none') {
+                details.style.display = 'flex';
+                icon.innerText = '▲';
+            } else {
+                details.style.display = 'none';
+                icon.innerText = '▼';
+            }
         }
     }
 
